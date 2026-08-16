@@ -71,7 +71,7 @@ html.lg-theme-switching body *::after {
 /* ===================== 顶部导航 ===================== */
 .typecho-head-nav {
     background: var(--ta-bg);
-    border-bottom: 0;
+    border-bottom: 1px solid var(--ta-line);
     box-shadow: none;
     color: var(--ta-ink);
 }
@@ -382,6 +382,7 @@ html[data-theme="dark"] #wmd-button-bar .wmd-button-row li span {
     list-style: none;
     padding: 0;
     margin: 2px 0 0;
+    border-bottom: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
