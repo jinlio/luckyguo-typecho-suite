@@ -284,7 +284,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · 锦鲤小果</title>
 <script>(function(){var m=document.cookie.match(/(?:^|;\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem('luckyguo-theme')||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m)document.cookie='luckyguo-theme='+t+'; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.1">
+<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.2">
 <link rel="icon" type="image/png" sizes="32x32" href="/usr/themes/luckyguo/favicon-32-v3.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/usr/themes/luckyguo/favicon-16-v3.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/usr/themes/luckyguo/apple-touch-icon-v3.png">
@@ -467,7 +467,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
   var styleTimer=0,animationTimer=0;
   if(toggle)toggle.addEventListener('click',function(){var t=root.dataset.theme==='dark'?'light':'dark';root.classList.add('theme-switching');void root.offsetWidth;toggle.classList.remove('is-rotating');void toggle.offsetWidth;toggle.classList.add('is-rotating');root.dataset.theme=t;save(t);color();clearTimeout(styleTimer);clearTimeout(animationTimer);styleTimer=setTimeout(function(){root.classList.remove('theme-switching');},280);animationTimer=setTimeout(function(){toggle.classList.remove('is-rotating');},700);});
   document.querySelectorAll('.trend-chart').forEach(function(svg){
-    var tip=svg.parentElement.querySelector('.chart-tooltip');if(!tip)return;
+    var tip=svg.parentElement.querySelector('.chart-tooltip');if(!tip)return;document.body.appendChild(tip);
     var hide=function(){tip.classList.remove('is-visible');};
     var show=function(point,x,y){var text=point.getAttribute('data-tip')||'';if(!text)return;tip.textContent=text;tip.classList.add('is-visible');var left=Math.min(x+14,window.innerWidth-tip.offsetWidth-12),top=Math.min(y+14,window.innerHeight-tip.offsetHeight-12);tip.style.left=Math.max(12,left)+'px';tip.style.top=Math.max(12,top)+'px';};
     svg.addEventListener('pointermove',function(e){var point=e.target.closest&&e.target.closest('.point');if(point)show(point,e.clientX,e.clientY);else hide();});
