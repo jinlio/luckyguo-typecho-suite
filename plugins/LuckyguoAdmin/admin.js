@@ -23,9 +23,15 @@
         document.cookie = COOKIE + '=' + t + '; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';
         var b = document.querySelector('.lg-theme-toggle');
         if (b) {
-            b.textContent = t === 'dark' ? '☀' : '☾';
+            b.textContent = '◐';
             b.setAttribute('title', t === 'dark' ? '切换到浅色主题' : '切换到深色主题');
             b.setAttribute('aria-pressed', t === 'dark' ? 'true' : 'false');
+            if (animate) {
+                b.classList.remove('is-rotating');
+                void b.offsetWidth;
+                b.classList.add('is-rotating');
+                setTimeout(function () { b.classList.remove('is-rotating'); }, 700);
+            }
         }
         if (animate) {
             styleTimer = setTimeout(function () {
@@ -39,7 +45,7 @@
         var op = document.querySelector('.typecho-head-nav .operate');
         if (op && !op.querySelector('.lg-theme-toggle')) {
             var b = document.createElement('button');
-            b.className = 'lg-theme-toggle';
+            b.className = 'lg-theme-toggle theme-toggle';
             b.type = 'button';
             b.setAttribute('aria-label', '切换主题');
             b.addEventListener('click', function (e) {

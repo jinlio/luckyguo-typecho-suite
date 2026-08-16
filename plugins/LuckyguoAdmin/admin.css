@@ -71,7 +71,7 @@ html.lg-theme-switching body *::after {
 /* ===================== 顶部导航 ===================== */
 .typecho-head-nav {
     background: var(--ta-bg);
-    border-bottom: 1px solid var(--ta-line);
+    border-bottom: 0;
     box-shadow: none;
     color: var(--ta-ink);
 }
@@ -717,6 +717,29 @@ html[data-theme="dark"] .btn-group .btn {
 }
 
 /* 与前台 .icon-button 对齐：42px、7px 圆角、透明底与单层边框。 */
+.typecho-head-nav nav > menu > li:not(.operate) > a,
+.typecho-head-nav .operate > a {
+    border: 0 !important;
+    border-radius: 0;
+    margin: 0;
+    padding: 6px 12px;
+    background: transparent !important;
+}
+.typecho-head-nav nav > menu > li:not(.operate) > a:hover,
+.typecho-head-nav nav > menu > li:not(.operate) > a:focus,
+.typecho-head-nav .operate > a:hover,
+.typecho-head-nav .operate > a:focus {
+    background: transparent !important;
+}
+html[data-theme="dark"] .typecho-head-nav nav > menu > li:not(.operate) > a:hover,
+html[data-theme="dark"] .typecho-head-nav nav > menu > li:not(.operate) > a:focus {
+    background: transparent !important;
+}
+.typecho-head-nav nav > menu > li:not(.operate).focus > a {
+    background: transparent !important;
+    border-radius: 0;
+    box-shadow: inset 0 -2px 0 var(--ta-accent);
+}
 .typecho-head-nav .operate .lg-theme-toggle {
     width: 42px;
     min-width: 42px;
@@ -735,4 +758,12 @@ html[data-theme="dark"] .btn-group .btn {
     background: var(--ta-surface-soft) !important;
     box-shadow: none !important;
     color: var(--ta-accent-strong);
+}
+
+@keyframes lg-theme-turn {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(180deg); }
+}
+.typecho-head-nav .operate .lg-theme-toggle.is-rotating {
+    animation: lg-theme-turn .48s cubic-bezier(.22, 1, .36, 1) both;
 }
