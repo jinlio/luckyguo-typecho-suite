@@ -140,7 +140,7 @@ section .hint { color: var(--ink-soft); font-size: 12px; }
 }
 .panel + .panel { margin-top: 14px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
-.grid-2 > .panel { min-height: 0; height: auto; display: flex; flex-direction: column; }
+.grid-2 > .panel { min-height: 0; height: 100%; display: flex; flex-direction: column; }
 .grid-2 > .panel:nth-child(2) { animation-delay: .06s; }
 .grid-2 > .panel:nth-child(3) { animation-delay: .12s; }
 .grid-2 > .panel:nth-child(4) { animation-delay: .18s; }

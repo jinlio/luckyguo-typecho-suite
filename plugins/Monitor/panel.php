@@ -284,7 +284,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · 锦鲤小果</title>
 <script>(function(){var m=document.cookie.match(/(?:^|;\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem('luckyguo-theme')||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m)document.cookie='luckyguo-theme='+t+'; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.2">
+<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.3">
 <link rel="icon" type="image/png" sizes="32x32" href="/usr/themes/luckyguo/favicon-32-v3.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/usr/themes/luckyguo/favicon-16-v3.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/usr/themes/luckyguo/apple-touch-icon-v3.png">
