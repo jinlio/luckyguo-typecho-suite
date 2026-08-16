@@ -18,6 +18,10 @@ Reusable Typecho components developed for the Luckyguo site. This repository kee
 
 ![Luckyguo Typecho blog homepage in light mode](docs/screenshots/blog-home-top-light.jpg)
 
+![Latest posts in light mode](docs/screenshots/blog-home-latest-light.jpg)
+
+![Search architecture article in light mode](docs/screenshots/search-article-top-light.jpg)
+
 ![Search article content and table of contents in light mode](docs/screenshots/search-article-body-light.jpg)
 
 ## Component inventory

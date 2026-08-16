@@ -20,6 +20,10 @@
 
 ![Luckyguo Typecho 博客浅色首页](docs/screenshots/blog-home-top-light.jpg)
 
+![浅色模式最新文章列表](docs/screenshots/blog-home-latest-light.jpg)
+
+![浅色模式搜索文章首屏](docs/screenshots/search-article-top-light.jpg)
+
 ![搜索文章浅色正文与目录](docs/screenshots/search-article-body-light.jpg)
 
 ## 目录
