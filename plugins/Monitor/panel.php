@@ -109,11 +109,11 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
         $hitRight = $i === $n - 1 ? $padL + $iw : ($x($i) + $x($i + 1)) / 2;
         $out .= "<rect class=\"point\" pointer-events=\"all\" data-tip=\"$tip\" x=\"" . round($hitLeft, 1) . "\" y=\"$padT\" width=\"" . round($hitRight - $hitLeft, 1) . "\" height=\"$ih\" fill=\"transparent\"><title>$tip</title></rect>";
     }
-    return $out . '</svg><div class="chart-tooltip" role="status" aria-live="polite"></div>';
+    return $out . '</svg>';
 }
 
 /** 柱状图 (可选异常叠段) */
-function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelFmt, int $w = 720, int $h = 168): string {
+function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelFmt, string $valueLabel, ?string $errLabel = null, int $w = 720, int $h = 168): string {
     $n = count($rows);
     if ($n === 0) return '<div class="chart-empty">暂无数据</div>';
     $padL = 40; $padR = 10; $padT = 12; $padB = 22;
@@ -123,7 +123,7 @@ function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelF
     $max = mon_nice_max($max);
     $bw = max(1.0, $iw / $n - 2);
 
-    $out = "<svg viewBox=\"0 0 $w $h\" role=\"img\" aria-hidden=\"true\">";
+    $out = "<svg class=\"trend-chart bar-chart\" viewBox=\"0 0 $w $h\" role=\"img\" aria-label=\"" . mon_e($valueLabel) . "趋势图\">";
     foreach ([0, 1] as $g) {
         $gy = $padT + $ih * (1 - $g);
         $out .= "<line class=\"grid\" x1=\"$padL\" y1=\"$gy\" x2=\"" . ($w - $padR) . "\" y2=\"$gy\"/>";
@@ -135,7 +135,8 @@ function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelF
         $bx = $padL + $iw * ($i + 0.5) / $n - $bw / 2;
         $by = $padT + $ih - $bh;
         $t = strtotime((string)$r['b']);
-        $tip = mon_e(date($labelFmt, $t) . ' · ' . mon_fnum($v) . ($errKey !== null ? ' · 异常 ' . mon_fnum((float)$r[$errKey]) : ''));
+        $tip = mon_e(date($labelFmt, $t) . ' · ' . $valueLabel . ' ' . mon_fnum($v)
+            . ($errKey !== null ? ' · ' . ($errLabel ?? '异常') . ' ' . mon_fnum((float)$r[$errKey]) : ''));
         $out .= "<rect x=\"" . round($bx, 1) . "\" y=\"" . round($by, 1) . "\" width=\"" . round($bw, 1) . "\" height=\"" . round(max($bh, $v > 0 ? 1.5 : 0), 1) . "\" rx=\"1.5\" fill=\"var(--accent)\" opacity=\"0.8\"><title>$tip</title></rect>";
         if ($errKey !== null && (float)$r[$errKey] > 0) {
             $eh = $ih * (float)$r[$errKey] / $max;
@@ -145,6 +146,14 @@ function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelF
     foreach ([0, intdiv($n - 1, 2), $n - 1] as $i) {
         $t = strtotime((string)$rows[$i]['b']);
         $out .= "<text class=\"axis\" x=\"" . ($padL + $iw * ($i + 0.5) / $n) . "\" y=\"" . ($h - 6) . "\" text-anchor=\"middle\">" . date($labelFmt, $t) . "</text>";
+    }
+    foreach ($rows as $i => $r) {
+        $v = (float)$r[$key];
+        $tip = mon_e(date($labelFmt, strtotime((string)$r['b'])) . ' · ' . $valueLabel . ' ' . mon_fnum($v)
+            . ($errKey !== null ? ' · ' . ($errLabel ?? '异常') . ' ' . mon_fnum((float)$r[$errKey]) : ''));
+        $hitLeft = $padL + $iw * $i / $n;
+        $hitRight = $padL + $iw * ($i + 1) / $n;
+        $out .= "<rect class=\"point\" pointer-events=\"all\" data-tip=\"$tip\" x=\"" . round($hitLeft, 1) . "\" y=\"$padT\" width=\"" . round($hitRight - $hitLeft, 1) . "\" height=\"$ih\" fill=\"transparent\"><title>$tip</title></rect>";
     }
     return $out . '</svg>';
 }
@@ -292,7 +301,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · 锦鲤小果</title>
 <script>(function(){var m=document.cookie.match(/(?:^|;\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem('luckyguo-theme')||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m)document.cookie='luckyguo-theme='+t+'; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.6">
+<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.7">
 <link rel="icon" type="image/png" sizes="32x32" href="/usr/themes/luckyguo/favicon-32-v3.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/usr/themes/luckyguo/favicon-16-v3.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/usr/themes/luckyguo/apple-touch-icon-v3.png">
@@ -348,7 +357,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
                     <span>TTFB <b data-site-ttfb="<?= mon_e($k) ?>"><?= $ttfb ?></b> ms</span>
                     <span>30 天可用率 <b><?= mon_e((string)($uptimeMap[$k] ?? '—')) ?></b>%</span>
                 </div>
-                <div class="strip" aria-hidden="true">
+                <div class="strip">
                     <?php
                     $now = time();
                     for ($i = 95; $i >= 0; $i--):
@@ -357,9 +366,10 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
                         if ($r === null || (int)$r['n'] === 0) { $cls = 'none'; $tip = '无数据'; }
                         elseif ((int)$r['bad'] > 0) { $cls = 'down'; $tip = '异常'; }
                         else { $cls = 'ok'; $tip = '正常'; }
-                        $tip = date('H:i', $slotStart) . ' ' . $tip . ($r ? ' · ' . (int)$r['ttfb'] . 'ms' : '');
+                        $tip = $name . ' · ' . date('H:i', $slotStart) . ' · ' . $tip
+                            . ($r ? ' · TTFB ' . (int)$r['ttfb'] . ' ms' : '');
                     ?>
-                    <i class="<?= $cls ?>" title="<?= mon_e($tip) ?>"></i>
+                    <i class="<?= $cls ?> uptime-point" data-tip="<?= mon_e($tip) ?>" aria-label="<?= mon_e($tip) ?>"></i>
                     <?php endfor; ?>
                 </div>
             </div>
@@ -401,7 +411,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
                 <div class="legend"><span><i style="background:var(--accent)"></i>接收 KB/s</span><span><i style="background:var(--sage)"></i>发送 KB/s</span></div>
             </div>
             <div class="panel chart">
-                <?= mon_bar_chart($traffic, 'req', 'err', $labelFmt) ?>
+                <?= mon_bar_chart($traffic, 'req', 'err', $labelFmt, '请求量', '4xx+5xx') ?>
                 <div class="legend"><span><i style="background:var(--accent)"></i>请求量/<?= $range === '24h' ? '5 分钟' : ($range === '7d' ? '小时' : '天') ?></span><span><i style="background:var(--accent-strong)"></i>4xx+5xx</span></div>
             </div>
         </div>
@@ -458,12 +468,14 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
                 <?php endif; ?>
             </div>
             <div class="panel chart">
-                <?= mon_bar_chart($uvDaily, 'uv', null, 'm-d') ?>
+                <?= mon_bar_chart($uvDaily, 'uv', null, 'm-d', '访客') ?>
                 <div class="legend"><span><i style="background:var(--accent)"></i>每日访客 · 近 30 天</span></div>
             </div>
         </div>
     </section>
 </main>
+
+<div class="chart-tooltip" role="status" aria-live="polite"></div>
 
 <footer><span>锦鲤小果 · luckyguo</span><span>STATUS / 2026</span></footer>
 
@@ -474,13 +486,11 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
   var color=function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',root.dataset.theme==='dark'?'#1c191d':'#fcfafb');};
   var styleTimer=0,animationTimer=0;
   if(toggle)toggle.addEventListener('click',function(){var t=root.dataset.theme==='dark'?'light':'dark';root.classList.add('theme-switching');void root.offsetWidth;toggle.classList.remove('is-rotating');void toggle.offsetWidth;toggle.classList.add('is-rotating');root.dataset.theme=t;save(t);color();clearTimeout(styleTimer);clearTimeout(animationTimer);styleTimer=setTimeout(function(){root.classList.remove('theme-switching');},280);animationTimer=setTimeout(function(){toggle.classList.remove('is-rotating');},700);});
-  document.querySelectorAll('.trend-chart').forEach(function(svg){
-    var tip=svg.parentElement.querySelector('.chart-tooltip');if(!tip)return;document.body.appendChild(tip);
-    var hide=function(){tip.classList.remove('is-visible');};
-    var show=function(point,x,y){var text=point.getAttribute('data-tip')||'';if(!text)return;tip.textContent=text;tip.classList.add('is-visible');var left=Math.min(x+14,window.innerWidth-tip.offsetWidth-12),top=Math.min(y+14,window.innerHeight-tip.offsetHeight-12);tip.style.left=Math.max(12,left)+'px';tip.style.top=Math.max(12,top)+'px';};
-    svg.addEventListener('pointermove',function(e){var point=e.target.closest&&e.target.closest('.point');if(point)show(point,e.clientX,e.clientY);else hide();});
-    svg.addEventListener('pointerleave',hide);svg.addEventListener('focusin',function(e){var point=e.target.closest&&e.target.closest('.point');if(point){var r=point.getBoundingClientRect();show(point,r.left+r.width/2,r.top);}});svg.addEventListener('focusout',hide);
-  });
+  var tip=document.querySelector('.chart-tooltip');
+  var hideTip=function(){if(tip)tip.classList.remove('is-visible');};
+  var showTip=function(point,x,y){if(!tip)return;var text=point.getAttribute('data-tip')||'';if(!text)return;tip.textContent=text;tip.classList.add('is-visible');var tw=tip.offsetWidth,th=tip.offsetHeight,left=x+14,top=point.classList.contains('uptime-point')?y-th-10:y+14;if(left+tw>window.innerWidth-12)left=x-tw-14;if(top+th>window.innerHeight-12)top=y-th-14;if(top<12)top=y+14;tip.style.left=Math.max(12,Math.min(left,window.innerWidth-tw-12))+'px';tip.style.top=Math.max(12,Math.min(top,window.innerHeight-th-12))+'px';};
+  document.addEventListener('pointermove',function(e){var point=e.target.closest&&e.target.closest('.point,.uptime-point');if(point)showTip(point,e.clientX,e.clientY);else hideTip();});
+  document.addEventListener('pointerleave',hideTip);window.addEventListener('blur',hideTip);window.addEventListener('scroll',hideTip,{passive:true});
   // 30s 局部刷新快照数据 (图表随页面刷新)
   var C=2*Math.PI*30;
   var setG=function(k,pct,v){pct=Math.max(0,Math.min(100,Math.round(pct)));var a=document.querySelector('[data-ga="'+k+'"]');if(a)a.style.strokeDashoffset=(C*(1-pct/100)).toFixed(1);var t=document.querySelector('[data-gv="'+k+'"]');if(t)t.textContent=pct+'%';var g=a&&a.closest('.gauge');if(g){g.classList.remove('warn','crit');if(pct>=85)g.classList.add('crit');else if(pct>=70)g.classList.add('warn');}var el=document.querySelector('[data-f="'+k+'_v"]');if(el&&v!==undefined)el.textContent=v;};
