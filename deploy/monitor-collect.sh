@@ -86,8 +86,6 @@ if (( PREV > CURSIZE )); then PREV=0; fi
 if (( CURSIZE > PREV )); then
   AGG=$(tail -c +$((PREV+1)) "$LOG" | awk '
     {
-      # Synthetic load checks use this explicit marker and must not affect site traffic charts.
-      if (index($0, "LuckyguoLoadTest/") > 0) next
       if ($1 == "-") next
       req++
       ip=$1; if (ip=="-") ip="127.0.0.1"
