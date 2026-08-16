@@ -85,6 +85,7 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
         $t = strtotime((string)$rows[$i]['b']);
         $out .= "<text class=\"axis\" x=\"" . $x($i) . "\" y=\"" . ($h - 6) . "\" text-anchor=\"middle\">" . date($labelFmt, $t) . "</text>";
     }
+    $tipParts = array_fill(0, $n, []);
     foreach ($allSeries as $s) {
         $axis = $axisOf($s);
         $pts = [];
@@ -97,9 +98,14 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
             $value = (float)$r[$s['key']];
             $precision = isset($s['precision']) ? (int)$s['precision'] : ($value < 10 ? 2 : 0);
             $unit = (string)($s['unit'] ?? '');
-            $tip = mon_e(date($labelFmt, strtotime((string)$r['b'])) . ' · ' . (string)$s['label'] . ' ' . mon_fnum($value, $precision) . $unit);
-            $out .= "<circle class=\"point\" tabindex=\"0\" pointer-events=\"all\" data-tip=\"$tip\" cx=\"" . round($x($i), 1) . "\" cy=\"" . round($y($value, $axis), 1) . "\" r=\"2.4\" fill=\"{$s['color']}\" stroke=\"transparent\" stroke-width=\"12\"><title>$tip</title></circle>";
+            $tipParts[$i][] = (string)$s['label'] . ' ' . mon_fnum($value, $precision) . $unit;
         }
+    }
+    $hitWidth = min(24, max(8, $iw / max($n, 1)));
+    foreach ($rows as $i => $r) {
+        $tip = mon_e(date($labelFmt, strtotime((string)$r['b'])) . ' · ' . implode(' · ', $tipParts[$i]));
+        $hitX = max($padL, min($x($i) - $hitWidth / 2, $padL + $iw - $hitWidth));
+        $out .= "<rect class=\"point\" pointer-events=\"all\" data-tip=\"$tip\" x=\"" . round($hitX, 1) . "\" y=\"$padT\" width=\"" . round($hitWidth, 1) . "\" height=\"$ih\" fill=\"transparent\"><title>$tip</title></rect>";
     }
     return $out . '</svg><div class="chart-tooltip" role="status" aria-live="polite"></div>';
 }
@@ -284,7 +290,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · 锦鲤小果</title>
 <script>(function(){var m=document.cookie.match(/(?:^|;\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem('luckyguo-theme')||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m)document.cookie='luckyguo-theme='+t+'; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.3">
+<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.4">
 <link rel="icon" type="image/png" sizes="32x32" href="/usr/themes/luckyguo/favicon-32-v3.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/usr/themes/luckyguo/favicon-16-v3.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/usr/themes/luckyguo/apple-touch-icon-v3.png">
