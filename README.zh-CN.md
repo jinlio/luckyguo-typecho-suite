@@ -26,6 +26,12 @@
 
 ![搜索文章浅色正文与目录](docs/screenshots/search-article-body-light.jpg)
 
+### 后台资源监控
+
+![浅色模式监控资源概览](docs/screenshots/monitor-overview-light.jpg)
+
+这是经过筛选的公开预览，只展示资源卡片、服务状态和可用性布局；实时流量与来源 IP 明细不会进入仓库。
+
 ## 目录
 
 - [适用范围与边界](#适用范围与边界)

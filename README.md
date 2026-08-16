@@ -24,6 +24,12 @@ Reusable Typecho components developed for the Luckyguo site. This repository kee
 
 ![Search article content and table of contents in light mode](docs/screenshots/search-article-body-light.jpg)
 
+### Monitoring panel
+
+![Monitor resource overview in light mode](docs/screenshots/monitor-overview-light.jpg)
+
+This is a public-safe top-section preview. Runtime traffic and source-IP details are intentionally omitted from the repository.
+
 ## Component inventory
 
 - `plugins/LuckyguoAdmin`: shared light/dark theme for the Typecho administrator.
