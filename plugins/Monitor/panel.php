@@ -98,10 +98,10 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
             $precision = isset($s['precision']) ? (int)$s['precision'] : ($value < 10 ? 2 : 0);
             $unit = (string)($s['unit'] ?? '');
             $tip = mon_e(date($labelFmt, strtotime((string)$r['b'])) . ' · ' . (string)$s['label'] . ' ' . mon_fnum($value, $precision) . $unit);
-            $out .= "<circle class=\"point\" cx=\"" . round($x($i), 1) . "\" cy=\"" . round($y($value, $axis), 1) . "\" r=\"2.4\" fill=\"{$s['color']}\" stroke=\"transparent\" stroke-width=\"9\"><title>$tip</title></circle>";
+            $out .= "<circle class=\"point\" tabindex=\"0\" pointer-events=\"all\" data-tip=\"$tip\" cx=\"" . round($x($i), 1) . "\" cy=\"" . round($y($value, $axis), 1) . "\" r=\"2.4\" fill=\"{$s['color']}\" stroke=\"transparent\" stroke-width=\"12\"><title>$tip</title></circle>";
         }
     }
-    return $out . '</svg>';
+    return $out . '</svg><div class="chart-tooltip" role="status" aria-live="polite"></div>';
 }
 
 /** 柱状图 (可选异常叠段) */
@@ -284,7 +284,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · 锦鲤小果</title>
 <script>(function(){var m=document.cookie.match(/(?:^|;\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem('luckyguo-theme')||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m)document.cookie='luckyguo-theme='+t+'; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.0">
+<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.1">
 <link rel="icon" type="image/png" sizes="32x32" href="/usr/themes/luckyguo/favicon-32-v3.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/usr/themes/luckyguo/favicon-16-v3.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/usr/themes/luckyguo/apple-touch-icon-v3.png">
@@ -466,6 +466,13 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
   var color=function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',root.dataset.theme==='dark'?'#1c191d':'#fcfafb');};
   var styleTimer=0,animationTimer=0;
   if(toggle)toggle.addEventListener('click',function(){var t=root.dataset.theme==='dark'?'light':'dark';root.classList.add('theme-switching');void root.offsetWidth;toggle.classList.remove('is-rotating');void toggle.offsetWidth;toggle.classList.add('is-rotating');root.dataset.theme=t;save(t);color();clearTimeout(styleTimer);clearTimeout(animationTimer);styleTimer=setTimeout(function(){root.classList.remove('theme-switching');},280);animationTimer=setTimeout(function(){toggle.classList.remove('is-rotating');},700);});
+  document.querySelectorAll('.trend-chart').forEach(function(svg){
+    var tip=svg.parentElement.querySelector('.chart-tooltip');if(!tip)return;
+    var hide=function(){tip.classList.remove('is-visible');};
+    var show=function(point,x,y){var text=point.getAttribute('data-tip')||'';if(!text)return;tip.textContent=text;tip.classList.add('is-visible');var left=Math.min(x+14,window.innerWidth-tip.offsetWidth-12),top=Math.min(y+14,window.innerHeight-tip.offsetHeight-12);tip.style.left=Math.max(12,left)+'px';tip.style.top=Math.max(12,top)+'px';};
+    svg.addEventListener('pointermove',function(e){var point=e.target.closest&&e.target.closest('.point');if(point)show(point,e.clientX,e.clientY);});
+    svg.addEventListener('pointerleave',hide);svg.addEventListener('focusin',function(e){var point=e.target.closest&&e.target.closest('.point');if(point){var r=point.getBoundingClientRect();show(point,r.left+r.width/2,r.top);}});svg.addEventListener('focusout',hide);
+  });
   // 30s 局部刷新快照数据 (图表随页面刷新)
   var C=2*Math.PI*30;
   var setG=function(k,pct,v){pct=Math.max(0,Math.min(100,Math.round(pct)));var a=document.querySelector('[data-ga="'+k+'"]');if(a)a.style.strokeDashoffset=(C*(1-pct/100)).toFixed(1);var t=document.querySelector('[data-gv="'+k+'"]');if(t)t.textContent=pct+'%';var g=a&&a.closest('.gauge');if(g){g.classList.remove('warn','crit');if(pct>=85)g.classList.add('crit');else if(pct>=70)g.classList.add('warn');}var el=document.querySelector('[data-f="'+k+'_v"]');if(el&&v!==undefined)el.textContent=v;};

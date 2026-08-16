@@ -100,7 +100,7 @@ section h2 { margin: 2px 0 0; font-size: 19px; font-weight: 700; }
 section .hint { color: var(--ink-soft); font-size: 12px; }
 
 /* ---------- 概览卡片 ---------- */
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; align-items: stretch; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; align-items: stretch; grid-auto-rows: minmax(112px, 1fr); }
 .card {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -139,12 +139,12 @@ section .hint { color: var(--ink-soft); font-size: 12px; }
     animation: monitor-reveal .55s cubic-bezier(.22, 1, .36, 1) both;
 }
 .panel + .panel { margin-top: 14px; }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
-.grid-2 > .panel { height: 100%; display: flex; flex-direction: column; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; grid-auto-rows: minmax(300px, 1fr); }
+.grid-2 > .panel { min-height: 300px; height: 100%; display: flex; flex-direction: column; }
 .grid-2 > .panel:nth-child(2) { animation-delay: .06s; }
 .grid-2 > .panel:nth-child(3) { animation-delay: .12s; }
 .grid-2 > .panel:nth-child(4) { animation-delay: .18s; }
-@media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; grid-auto-rows: auto; } .grid-2 > .panel { min-height: 0; } }
 
 /* ---------- 服务状态灯 ---------- */
 .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
@@ -178,15 +178,16 @@ section .hint { color: var(--ink-soft); font-size: 12px; }
 .range-nav { display: flex; gap: 8px; }
 .range-nav a { border: 1px solid var(--line); color: var(--ink-soft); border-radius: 4px; padding: 3px 13px; font-size: 12px; font-weight: 600; }
 .range-nav a.cur { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-.chart { margin-top: 6px; }
+.chart { position: relative; margin-top: 6px; }
 .chart svg { display: block; width: 100%; height: auto; }
 .chart .grid { stroke: var(--line); stroke-dasharray: 3 4; }
 .chart .axis { fill: var(--ink-soft); font-size: 10px; }
 .chart .axis-right { fill: var(--sage); }
 .chart .line { fill: none; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1200; stroke-dashoffset: 1200; animation: chart-draw 1.1s cubic-bezier(.22, 1, .36, 1) forwards; }
-.chart .point { cursor: crosshair; transition: r .15s ease, stroke-width .15s ease, opacity .15s ease; }
-.chart .point:hover { r: 4.5px; stroke: var(--surface); stroke-width: 1.4; }
+.chart .point { opacity: 0; pointer-events: all; cursor: crosshair; }
 .chart .legend { margin-top: auto; }
+.chart-tooltip { position: fixed; z-index: 30; max-width: min(260px, calc(100vw - 24px)); padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; line-height: 1.35; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(3px); transition: opacity .14s ease, transform .14s ease, visibility .14s step-end; }
+.chart-tooltip.is-visible { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity .14s ease, transform .14s ease; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
 .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; }
 .chart-empty { padding: 36px 0; text-align: center; color: var(--ink-soft); font-size: 13px; }
@@ -195,6 +196,7 @@ section .hint { color: var(--ink-soft); font-size: 12px; }
 @media (prefers-reduced-motion: reduce) {
     .card, .panel { animation: none; }
     .chart .line { animation: none; stroke-dashoffset: 0; }
+    .chart-tooltip { transition: none; }
 }
 
 /* ---------- 流量面板 ---------- */
