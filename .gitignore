@@ -1,0 +1,11 @@
+config.inc.php
+*.cnf
+*.env
+*.sql
+*.sql.gz
+usr/uploads/
+usr/backups/
+*/cache/
+*.bak*
+._*
+.DS_Store

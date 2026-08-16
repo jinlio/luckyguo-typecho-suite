@@ -1,0 +1,181 @@
+diff --git a/var/Typecho/Common.php b/var/Typecho/Common.php
+index 3a70def..db7258a 100644
+--- a/var/Typecho/Common.php
++++ b/var/Typecho/Common.php
+@@ -1024,6 +1024,35 @@ EOF;
+                 $inet = inet_pton($address);
+             }
+
++            if (false === $inet) {
++                return false;
++            }
++
++            // 补充防护 (CVE-2026-7025): CGNAT(含阿里云元数据 100.100.100.200)、
++            // 保留/组播段 (0/8, 224/4, 240/4) 及 IPv6 回环/未指定/ULA/链路本地/组播
++            if (4 == strlen($inet)) {
++                $octets = explode('.', $address);
++
++                if (
++                    0 == (int) $octets[0]
++                    || (int) $octets[0] >= 224
++                    || ('100' == $octets[0] && (int) $octets[1] >= 64 && (int) $octets[1] <= 127)
++                ) {
++                    return false;
++                }
++            } elseif (
++                in_array($address, ['::', '::1'])
++                || 0 === strpos($address, 'fe8')
++                || 0 === strpos($address, 'fe9')
++                || 0 === strpos($address, 'fea')
++                || 0 === strpos($address, 'feb')
++                || 0 === strpos($address, 'fc')
++                || 0 === strpos($address, 'fd')
++                || 0 === strpos($address, 'ff')
++            ) {
++                return false;
++            }
++
+             return filter_var(
+                 $address,
+                 FILTER_VALIDATE_IP,
+diff --git a/var/Widget/Service.php b/var/Widget/Service.php
+index 2275937..825beb1 100644
+--- a/var/Widget/Service.php
++++ b/var/Widget/Service.php
+@@ -81,6 +81,10 @@ class Service extends BaseOptions implements ActionInterface
+                     continue;
+                 }
+
++                if (!$this->isSafeRemoteUrl($url)) {
++                    continue;
++                }
++
+                 $spider = Client::get();
+
+                 if ($spider) {
+@@ -103,6 +107,10 @@ class Service extends BaseOptions implements ActionInterface
+                         $response['pingback'][] = $url;
+
+                         try {
++                            if (!$this->isSafeRemoteUrl($xmlrpcUrl)) {
++                                continue;
++                            }
++
+                             $xmlrpc = new \IXR\Client($xmlrpcUrl);
+                             $xmlrpc->pingback->ping($permalink, $url);
+                             unset($xmlrpc);
+@@ -126,6 +134,10 @@ class Service extends BaseOptions implements ActionInterface
+
+                 if ($client) {
+                     try {
++                        if (!$this->isSafeRemoteUrl($url)) {
++                            continue;
++                        }
++
+                         $client->setTimeout(5)
+                             ->setData([
+                                 'blog_name' => $this->options->title . ' &raquo ' . $title,
+@@ -145,6 +157,103 @@ class Service extends BaseOptions implements ActionInterface
+         $this->response->throwJson($response);
+     }
+
++    /**
++     * SSRF 防护: 仅允许公网 HTTP(S) 目标地址
++     * 拒绝回环、内网、链路本地、CGNAT(含阿里云元数据 100.100.100.200)、保留及组播地址
++     * 对应 CVE-2026-7025 (Ping Back Service Endpoint sendPingHandle)
++     *
++     * @param string $url 目标 URL
++     * @return bool
++     */
++    private function isSafeRemoteUrl(string $url)
++    {
++        $urlPart = parse_url((string) $url);
++
++        if (empty($urlPart['scheme']) || empty($urlPart['host'])) {
++            return false;
++        }
++
++        if (!in_array(strtolower($urlPart['scheme']), ['http', 'https'])) {
++            return false;
++        }
++
++        $host = strtolower($urlPart['host']);
++
++        if ('localhost' == $host || '.local' == substr($host, -6)) {
++            return false;
++        }
++
++        if (function_exists('idn_to_ascii')) {
++            $host = idn_to_ascii($host, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
++
++            if (false === $host) {
++                return false;
++            }
++
++            $host = strtolower($host);
++        }
++
++        if (filter_var($host, FILTER_VALIDATE_IP)) {
++            $ips = [$host];
++        } else {
++            $ips = @gethostbynamel($host);
++
++            if (empty($ips)) {
++                return false;
++            }
++        }
++
++        foreach ((array) $ips as $ip) {
++            if (false !== strpos($ip, ':')) {
++                if (in_array($ip, ['::1', '::'])) {
++                    return false;
++                }
++
++                if (0 === strpos($ip, 'fe80') || 0 === strpos($ip, 'fc') || 0 === strpos($ip, 'fd')) {
++                    return false;
++                }
++
++                continue;
++            }
++
++            $long = ip2long($ip);
++
++            if (
++                false === $long
++                || false === filter_var(
++                    $ip,
++                    FILTER_VALIDATE_IP,
++                    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
++                )
++            ) {
++                return false;
++            }
++
++            if (self::isCgnatOrReserved($long)) {
++                return false;
++            }
++        }
++
++        return true;
++    }
++
++    /**
++     * 是否属于 CGNAT (100.64.0.0/10) 或保留/组播段 (0/8, 224/4, 240/4)
++     *
++     * @param int $long ip2long 值
++     * @return bool
++     */
++    private static function isCgnatOrReserved(int $long): bool
++    {
++        $octets = explode('.', long2ip($long));
++
++        if ('100' == $octets[0] && (int) $octets[1] >= 64 && (int) $octets[1] <= 127) {
++            return true;
++        }
++
++        return 0 == (int) $octets[0] || (int) $octets[0] >= 224;
++    }
++
+     /**
+      * 发送pingback
+      * <code>
