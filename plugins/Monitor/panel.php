@@ -109,7 +109,7 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
         // without rendering markers or allowing neighbouring data points to overlap.
         $hitLeft = $i === 0 ? $padL : ($x($i - 1) + $x($i)) / 2;
         $hitRight = $i === $n - 1 ? $padL + $iw : ($x($i) + $x($i + 1)) / 2;
-        $out .= "<rect class=\"point\" pointer-events=\"all\" data-tip=\"$tip\" x=\"" . round($hitLeft, 1) . "\" y=\"$padT\" width=\"" . round($hitRight - $hitLeft, 1) . "\" height=\"$ih\" fill=\"transparent\"><title>$tip</title></rect>";
+        $out .= "<rect class=\"point\" pointer-events=\"all\" data-tip=\"$tip\" x=\"" . round($hitLeft, 1) . "\" y=\"$padT\" width=\"" . round($hitRight - $hitLeft, 1) . "\" height=\"$ih\" fill=\"transparent\"/>";
     }
     return $out . '</svg>';
 }
@@ -141,10 +141,10 @@ function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelF
         $barDelay = min($i, 36) * 0.012;
         $tip = mon_e(date($labelFmt, $t) . ' · ' . $valueLabel . ' ' . mon_fnum($v)
             . ($errKey !== null ? ' · ' . ($errLabel ?? '异常') . ' ' . mon_fnum((float)$r[$errKey]) : ''));
-        $out .= "<rect class=\"bar-fill\" style=\"animation-delay:{$barDelay}s\" x=\"" . round($bx, 1) . "\" y=\"" . round($by, 1) . "\" width=\"" . round($bw, 1) . "\" height=\"" . round(max($bh, $v > 0 ? 1.5 : 0), 1) . "\" rx=\"1\" fill=\"var(--accent)\" opacity=\"0.8\"><title>$tip</title></rect>";
+        $out .= "<rect class=\"bar-fill\" style=\"animation-delay:{$barDelay}s\" x=\"" . round($bx, 1) . "\" y=\"" . round($by, 1) . "\" width=\"" . round($bw, 1) . "\" height=\"" . round(max($bh, $v > 0 ? 1.5 : 0), 1) . "\" rx=\"1\" fill=\"var(--accent)\" opacity=\"0.8\"/>";
         if ($errKey !== null && (float)$r[$errKey] > 0) {
             $eh = $ih * (float)$r[$errKey] / $max;
-            $out .= "<rect class=\"bar-fill bar-error\" style=\"animation-delay:{$barDelay}s\" x=\"" . round($bx, 1) . "\" y=\"" . round($by, 1) . "\" width=\"" . round($bw, 1) . "\" height=\"" . round(max($eh, 1.5), 1) . "\" rx=\"1\" fill=\"var(--accent-strong)\"><title>$tip</title></rect>";
+            $out .= "<rect class=\"bar-fill bar-error\" style=\"animation-delay:{$barDelay}s\" x=\"" . round($bx, 1) . "\" y=\"" . round($by, 1) . "\" width=\"" . round($bw, 1) . "\" height=\"" . round(max($eh, 1.5), 1) . "\" rx=\"1\" fill=\"var(--accent-strong)\"/>";
         }
     }
     foreach ([0, intdiv($n - 1, 2), $n - 1] as $i) {
@@ -157,7 +157,7 @@ function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelF
             . ($errKey !== null ? ' · ' . ($errLabel ?? '异常') . ' ' . mon_fnum((float)$r[$errKey]) : ''));
         $hitLeft = $padL + $iw * $i / $n;
         $hitRight = $padL + $iw * ($i + 1) / $n;
-        $out .= "<rect class=\"point\" pointer-events=\"all\" data-tip=\"$tip\" x=\"" . round($hitLeft, 1) . "\" y=\"$padT\" width=\"" . round($hitRight - $hitLeft, 1) . "\" height=\"$ih\" fill=\"transparent\"><title>$tip</title></rect>";
+        $out .= "<rect class=\"point\" pointer-events=\"all\" data-tip=\"$tip\" x=\"" . round($hitLeft, 1) . "\" y=\"$padT\" width=\"" . round($hitRight - $hitLeft, 1) . "\" height=\"$ih\" fill=\"transparent\"/>";
     }
     return $out . '</svg>';
 }
