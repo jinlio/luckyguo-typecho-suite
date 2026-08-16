@@ -42,19 +42,22 @@ $this->need('header.php');
     <div class="section-heading"><strong><?php echo $this->is('index') ? '最新记录' : '文章列表'; ?></strong><span>RECENT WRITING</span></div>
     <section class="post-list" aria-label="文章列表">
         <?php if ($this->have()): ?>
-            <?php $postViews = luckyguo_get_views_batch($this->toArray('cid')); ?>
+            <?php $postCids = $this->toArray('cid'); ?>
+            <?php $postViews = luckyguo_get_views_batch($postCids); ?>
+            <?php $postMetas = luckyguo_get_post_metas_batch($postCids, $this->options); ?>
             <?php $postIndex = 1; ?>
             <?php while ($this->next()): ?>
+            <?php $postMeta = $postMetas[(int) $this->cid] ?? ['categories' => [], 'tags' => []]; ?>
             <article class="post-row">
                 <div class="post-date"><span class="post-sequence"><?php printf('%02d', $postIndex++); ?></span><time datetime="<?php $this->date('c'); ?>"><?php $this->date('Y.m.d'); ?></time></div>
                 <div class="post-main">
-                    <div class="post-kicker"><?php $this->category(' / ', true, '未分类'); ?></div>
+                    <div class="post-kicker"><?php if ($postMeta['categories']): ?><?php foreach ($postMeta['categories'] as $categoryIndex => $category): ?><?php echo $categoryIndex ? ' / ' : ''; ?><a href="<?php echo htmlspecialchars($category['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8'); ?></a><?php endforeach; ?><?php else: ?>未分类<?php endif; ?></div>
                     <h2><a href="<?php $this->permalink(); ?>"><?php $this->title(); ?></a></h2>
-                    <div class="post-summary"><?php $this->excerpt(150, '…'); ?></div>
+                    <div class="post-summary"><?php echo htmlspecialchars(luckyguo_list_excerpt((string) $this->text), ENT_QUOTES, 'UTF-8'); ?></div>
                     <div class="post-meta">
                         <span><?php $this->commentsNum('暂无评论', '1 条评论', '%d 条评论'); ?></span>
                         <span>阅读 <?php echo $postViews[(int) $this->cid] ?? 0; ?></span>
-                        <span><?php $this->tags(' #', true, ''); ?></span>
+                        <span><?php foreach ($postMeta['tags'] as $tagIndex => $tag): ?><?php echo $tagIndex ? ' #' : ''; ?><a href="<?php echo htmlspecialchars($tag['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($tag['name'], ENT_QUOTES, 'UTF-8'); ?></a><?php endforeach; ?></span>
                     </div>
                 </div>
             </article>

@@ -264,6 +264,72 @@ function luckyguo_get_views_batch(array $cids): array
     return $views;
 }
 
+/**
+ * Build a lightweight list summary without parsing every full Markdown document.
+ */
+function luckyguo_list_excerpt(string $text, int $length = 150): string
+{
+    $text = preg_replace('/^<!--markdown-->\s*/u', '', $text) ?? $text;
+    $text = explode('<!--more-->', $text, 2)[0];
+    $text = preg_replace('/```[\s\S]*?```/u', ' ', $text) ?? $text;
+    $text = preg_replace('/!\[([^\]]*)\]\([^)]*\)/u', '$1', $text) ?? $text;
+    $text = preg_replace('/\[([^\]]+)\]\([^)]*\)/u', '$1', $text) ?? $text;
+    $text = strip_tags($text);
+    $text = preg_replace('/^[\s>*#+-]+/mu', '', $text) ?? $text;
+    $text = preg_replace('/[`*_~]/u', '', $text) ?? $text;
+    $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+    return \Typecho\Common::subStr(trim($text), 0, $length, '…');
+}
+
+/**
+ * Fetch category and tag links for a post list in one relationship query.
+ */
+function luckyguo_get_post_metas_batch(array $cids, \Widget\Options $options): array
+{
+    $cids = array_values(array_unique(array_filter(
+        array_map('intval', $cids),
+        static fn (int $cid): bool => $cid > 0
+    )));
+    $metas = array_fill_keys($cids, ['categories' => [], 'tags' => []]);
+    if (!$cids) {
+        return $metas;
+    }
+
+    try {
+        $db = luckyguo_db();
+        $rows = $db->fetchAll(
+            $db->select(
+                'table.relationships.cid',
+                'table.metas.mid',
+                'table.metas.name',
+                'table.metas.slug',
+                'table.metas.type'
+            )
+                ->from('table.relationships')
+                ->join('table.metas', 'table.relationships.mid = table.metas.mid')
+                ->where('table.relationships.cid IN ?', $cids)
+                ->where('table.metas.type IN ?', ['category', 'tag'])
+                ->order('table.relationships.cid')
+        );
+        foreach ($rows as $row) {
+            $cid = (int) ($row['cid'] ?? 0);
+            $type = (string) ($row['type'] ?? '');
+            if (!isset($metas[$cid]) || !in_array($type, ['category', 'tag'], true)) {
+                continue;
+            }
+            $metas[$cid][$type === 'category' ? 'categories' : 'tags'][] = [
+                'name' => (string) ($row['name'] ?? ''),
+                'url' => \Typecho\Router::url($type, $row, $options->index),
+            ];
+        }
+    } catch (\Throwable $e) {
+        // List pages remain usable if optional metadata cannot be loaded.
+    }
+
+    return $metas;
+}
+
 function luckyguo_today_stats(): array
 {
     try {
