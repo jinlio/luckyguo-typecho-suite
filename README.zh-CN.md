@@ -8,9 +8,13 @@
 
 ## 前台预览
 
-![Luckyguo Typecho 博客首页](docs/screenshots/blog-home.jpg)
+![Luckyguo Typecho 博客首页](docs/screenshots/blog-home-top.jpg)
 
-![搜索系统优化文章](docs/screenshots/search-article.jpg)
+![最新文章列表](docs/screenshots/blog-home-latest.jpg)
+
+![搜索系统优化文章](docs/screenshots/search-article-top.jpg)
+
+![搜索文章正文与目录](docs/screenshots/search-article-body.jpg)
 
 ## 目录
 
