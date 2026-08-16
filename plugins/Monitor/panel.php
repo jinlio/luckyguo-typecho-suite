@@ -101,17 +101,19 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
             $tipParts[$i][] = (string)$s['label'] . ' ' . mon_fnum($value, $precision) . $unit;
         }
     }
-    $hitWidth = min(24, max(8, $iw / max($n, 1)));
     foreach ($rows as $i => $r) {
         $tip = mon_e(date($labelFmt, strtotime((string)$r['b'])) . ' · ' . implode(' · ', $tipParts[$i]));
-        $hitX = max($padL, min($x($i) - $hitWidth / 2, $padL + $iw - $hitWidth));
-        $out .= "<rect class=\"point\" pointer-events=\"all\" data-tip=\"$tip\" x=\"" . round($hitX, 1) . "\" y=\"$padT\" width=\"" . round($hitWidth, 1) . "\" height=\"$ih\" fill=\"transparent\"><title>$tip</title></rect>";
+        // Adjacent hit bands meet at their midpoints. This preserves precise hover values
+        // without rendering markers or allowing neighbouring data points to overlap.
+        $hitLeft = $i === 0 ? $padL : ($x($i - 1) + $x($i)) / 2;
+        $hitRight = $i === $n - 1 ? $padL + $iw : ($x($i) + $x($i + 1)) / 2;
+        $out .= "<rect class=\"point\" pointer-events=\"all\" data-tip=\"$tip\" x=\"" . round($hitLeft, 1) . "\" y=\"$padT\" width=\"" . round($hitRight - $hitLeft, 1) . "\" height=\"$ih\" fill=\"transparent\"><title>$tip</title></rect>";
     }
     return $out . '</svg><div class="chart-tooltip" role="status" aria-live="polite"></div>';
 }
 
 /** 柱状图 (可选异常叠段) */
-function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelFmt, int $w = 720, int $h = 150): string {
+function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelFmt, int $w = 720, int $h = 168): string {
     $n = count($rows);
     if ($n === 0) return '<div class="chart-empty">暂无数据</div>';
     $padL = 40; $padR = 10; $padT = 12; $padB = 22;
@@ -290,7 +292,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · 锦鲤小果</title>
 <script>(function(){var m=document.cookie.match(/(?:^|;\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem('luckyguo-theme')||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m)document.cookie='luckyguo-theme='+t+'; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.4">
+<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.6">
 <link rel="icon" type="image/png" sizes="32x32" href="/usr/themes/luckyguo/favicon-32-v3.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/usr/themes/luckyguo/favicon-16-v3.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/usr/themes/luckyguo/apple-touch-icon-v3.png">
