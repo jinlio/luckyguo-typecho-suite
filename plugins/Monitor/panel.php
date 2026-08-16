@@ -121,7 +121,8 @@ function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelF
     $max = 0.0;
     foreach ($rows as $r) $max = max($max, (float)$r[$key]);
     $max = mon_nice_max($max);
-    $bw = max(1.0, $iw / $n - 2);
+    // Keep dense traffic bars readable while preventing short series from becoming columns.
+    $bw = min(10.0, max(0.8, $iw / $n * 0.5));
 
     $out = "<svg class=\"trend-chart bar-chart\" viewBox=\"0 0 $w $h\" role=\"img\" aria-label=\"" . mon_e($valueLabel) . "趋势图\">";
     foreach ([0, 1] as $g) {
@@ -135,12 +136,13 @@ function mon_bar_chart(array $rows, string $key, ?string $errKey, string $labelF
         $bx = $padL + $iw * ($i + 0.5) / $n - $bw / 2;
         $by = $padT + $ih - $bh;
         $t = strtotime((string)$r['b']);
+        $barDelay = min($i, 36) * 0.012;
         $tip = mon_e(date($labelFmt, $t) . ' · ' . $valueLabel . ' ' . mon_fnum($v)
             . ($errKey !== null ? ' · ' . ($errLabel ?? '异常') . ' ' . mon_fnum((float)$r[$errKey]) : ''));
-        $out .= "<rect x=\"" . round($bx, 1) . "\" y=\"" . round($by, 1) . "\" width=\"" . round($bw, 1) . "\" height=\"" . round(max($bh, $v > 0 ? 1.5 : 0), 1) . "\" rx=\"1.5\" fill=\"var(--accent)\" opacity=\"0.8\"><title>$tip</title></rect>";
+        $out .= "<rect class=\"bar-fill\" style=\"animation-delay:{$barDelay}s\" x=\"" . round($bx, 1) . "\" y=\"" . round($by, 1) . "\" width=\"" . round($bw, 1) . "\" height=\"" . round(max($bh, $v > 0 ? 1.5 : 0), 1) . "\" rx=\"1\" fill=\"var(--accent)\" opacity=\"0.8\"><title>$tip</title></rect>";
         if ($errKey !== null && (float)$r[$errKey] > 0) {
             $eh = $ih * (float)$r[$errKey] / $max;
-            $out .= "<rect x=\"" . round($bx, 1) . "\" y=\"" . round($by, 1) . "\" width=\"" . round($bw, 1) . "\" height=\"" . round(max($eh, 1.5), 1) . "\" rx=\"1.5\" fill=\"var(--accent-strong)\"><title>$tip</title></rect>";
+            $out .= "<rect class=\"bar-fill bar-error\" style=\"animation-delay:{$barDelay}s\" x=\"" . round($bx, 1) . "\" y=\"" . round($by, 1) . "\" width=\"" . round($bw, 1) . "\" height=\"" . round(max($eh, 1.5), 1) . "\" rx=\"1\" fill=\"var(--accent-strong)\"><title>$tip</title></rect>";
         }
     }
     foreach ([0, intdiv($n - 1, 2), $n - 1] as $i) {
@@ -301,7 +303,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · 锦鲤小果</title>
 <script>(function(){var m=document.cookie.match(/(?:^|;\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem('luckyguo-theme')||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m)document.cookie='luckyguo-theme='+t+'; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.7">
+<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.8">
 <link rel="icon" type="image/png" sizes="32x32" href="/usr/themes/luckyguo/favicon-32-v3.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/usr/themes/luckyguo/favicon-16-v3.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/usr/themes/luckyguo/apple-touch-icon-v3.png">
