@@ -16,6 +16,12 @@
 
 ![搜索文章正文与目录](docs/screenshots/search-article-body.jpg)
 
+### 浅色模式
+
+![Luckyguo Typecho 博客浅色首页](docs/screenshots/blog-home-top-light.jpg)
+
+![搜索文章浅色正文与目录](docs/screenshots/search-article-body-light.jpg)
+
 ## 目录
 
 - [适用范围与边界](#适用范围与边界)
