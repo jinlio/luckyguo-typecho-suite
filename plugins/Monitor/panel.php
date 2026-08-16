@@ -470,7 +470,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
     var tip=svg.parentElement.querySelector('.chart-tooltip');if(!tip)return;
     var hide=function(){tip.classList.remove('is-visible');};
     var show=function(point,x,y){var text=point.getAttribute('data-tip')||'';if(!text)return;tip.textContent=text;tip.classList.add('is-visible');var left=Math.min(x+14,window.innerWidth-tip.offsetWidth-12),top=Math.min(y+14,window.innerHeight-tip.offsetHeight-12);tip.style.left=Math.max(12,left)+'px';tip.style.top=Math.max(12,top)+'px';};
-    svg.addEventListener('pointermove',function(e){var point=e.target.closest&&e.target.closest('.point');if(point)show(point,e.clientX,e.clientY);});
+    svg.addEventListener('pointermove',function(e){var point=e.target.closest&&e.target.closest('.point');if(point)show(point,e.clientX,e.clientY);else hide();});
     svg.addEventListener('pointerleave',hide);svg.addEventListener('focusin',function(e){var point=e.target.closest&&e.target.closest('.point');if(point){var r=point.getBoundingClientRect();show(point,r.left+r.width/2,r.top);}});svg.addEventListener('focusout',hide);
   });
   // 30s 局部刷新快照数据 (图表随页面刷新)
