@@ -657,3 +657,82 @@ hr { border-color: var(--ta-line); }
 html[data-theme="dark"] ::-webkit-scrollbar { width: 10px; height: 10px; }
 html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #3b353d; border-radius: 5px; }
 html[data-theme="dark"] ::-webkit-scrollbar-track { background: #1c191d; }
+
+/* 深色后台保持前台相同的扁平层级：边框区分区域，不使用高光、投影或悬浮位移。 */
+html[data-theme="dark"] {
+    --ta-shadow: none;
+}
+html[data-theme="dark"] .typecho-head-nav nav li.focus > a,
+html[data-theme="dark"] .typecho-head-nav nav > menu > li:not(.operate).focus > a {
+    background: transparent !important;
+    box-shadow: inset 0 -2px 0 var(--ta-accent);
+    border-radius: 0;
+}
+html[data-theme="dark"] .typecho-head-nav nav > menu > li:not(.operate) > a:hover,
+html[data-theme="dark"] .typecho-head-nav nav menu > li > a:hover {
+    background: var(--ta-surface-soft) !important;
+}
+html[data-theme="dark"] .typecho-dashboard .welcome-board,
+html[data-theme="dark"] .typecho-dashboard .latest-link,
+html[data-theme="dark"] .typecho-login form,
+html[data-theme="dark"] .ui-datepicker,
+html[data-theme="dark"] .ui-timepicker,
+html[data-theme="dark"] .ui-autocomplete,
+html[data-theme="dark"] .ui-dialog,
+html[data-theme="dark"] .ui-menu,
+html[data-theme="dark"] .typecho-head-nav nav menu menu,
+html[data-theme="dark"] .typecho-head-nav nav menu > li > menu {
+    box-shadow: none !important;
+}
+html[data-theme="dark"] .typecho-dashboard .welcome-board::before {
+    background: var(--ta-accent);
+}
+html[data-theme="dark"] .typecho-dashboard .latest-link {
+    transition: border-color .2s ease, background-color .2s ease;
+}
+html[data-theme="dark"] .typecho-dashboard .latest-link:hover {
+    background: var(--ta-surface-soft);
+    box-shadow: none;
+    transform: none;
+}
+html[data-theme="dark"] #start-link a,
+html[data-theme="dark"] .typecho-dashboard .latest-link li span,
+html[data-theme="dark"] .typecho-pager li.current a {
+    background: transparent;
+    border: 1px solid var(--ta-line);
+    box-shadow: none;
+    color: var(--ta-accent-strong);
+}
+html[data-theme="dark"] #start-link a:hover {
+    background: var(--ta-surface-soft);
+    border-color: var(--ta-accent);
+    color: var(--ta-accent-strong);
+    transform: none;
+}
+html[data-theme="dark"] .btn,
+html[data-theme="dark"] .btn-drop,
+html[data-theme="dark"] .btn-group .btn {
+    background-image: none;
+    box-shadow: none !important;
+}
+
+/* 与前台 .icon-button 对齐：42px、7px 圆角、透明底与单层边框。 */
+.typecho-head-nav .operate .lg-theme-toggle {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    margin: 0 4px;
+    border: 1px solid var(--ta-line) !important;
+    border-radius: 7px;
+    background: transparent !important;
+    color: var(--ta-ink-soft);
+    font-size: 18px;
+    transition: background-color .25s ease, border-color .25s ease, color .25s ease;
+}
+.typecho-head-nav .operate .lg-theme-toggle:hover,
+.typecho-head-nav .operate .lg-theme-toggle:focus-visible {
+    border-color: var(--ta-accent) !important;
+    background: var(--ta-surface-soft) !important;
+    box-shadow: none !important;
+    color: var(--ta-accent-strong);
+}

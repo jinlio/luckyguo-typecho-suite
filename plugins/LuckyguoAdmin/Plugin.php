@@ -36,8 +36,8 @@ class Plugin implements PluginInterface
         $base = '/usr/plugins/LuckyguoAdmin/';
         return $header
             . "\n" . '<script>(function(){var m=document.cookie.match(/(?:^|;\\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem("luckyguo-theme")||((matchMedia("(prefers-color-scheme:dark)").matches)?"dark":"light");document.documentElement.dataset.theme=t;})();</script>'
-            . "\n" . '<link rel="stylesheet" href="' . $base . 'admin.css?v=1.3.6">'
-            . "\n" . '<script src="' . $base . 'admin.js?v=1.3.6" defer></script>';
+            . "\n" . '<link rel="stylesheet" href="' . $base . 'admin.css?v=1.3.7">'
+            . "\n" . '<script src="' . $base . 'admin.js?v=1.3.7" defer></script>';
     }
 
     public static function config(Form $form)
