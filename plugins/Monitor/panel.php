@@ -54,35 +54,52 @@ function mon_nice_max(float $v): float {
     return 10 * $p;
 }
 
-/** 多序列折线/面积图. $rows: 按时间升序; $series: [['key','label','color','area'=>bool]] */
-function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 720, int $h = 168): string {
+/** 多序列折线/面积图，支持可选右侧纵轴. $rows: 按时间升序 */
+function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 720, int $h = 168, array $rightSeries = []): string {
     $n = count($rows);
     if ($n === 0) return '<div class="chart-empty">暂无数据 · 采集器运行后即显示</div>';
-    $padL = 40; $padR = 10; $padT = 12; $padB = 22;
+    $padL = 40; $padR = $rightSeries ? 42 : 10; $padT = 12; $padB = 22;
     $iw = $w - $padL - $padR; $ih = $h - $padT - $padB;
-    $max = 0.0;
-    foreach ($rows as $r) foreach ($series as $s) $max = max($max, (float)$r[$s['key']]);
-    $max = mon_nice_max($max);
+    $allSeries = array_merge($series, $rightSeries);
+    $leftMax = 0.0; $rightMax = 0.0;
+    foreach ($rows as $r) {
+        foreach ($series as $s) $leftMax = max($leftMax, (float)$r[$s['key']]);
+        foreach ($rightSeries as $s) $rightMax = max($rightMax, (float)$r[$s['key']]);
+    }
+    $leftMax = mon_nice_max($leftMax);
+    $rightMax = $rightSeries ? mon_nice_max($rightMax) : $leftMax;
     $x = fn(int $i): float => $padL + ($n <= 1 ? $iw / 2 : $iw * $i / ($n - 1));
-    $y = fn(float $v): float => $padT + $ih * (1 - min($v, $max) / $max);
+    $axisOf = fn(array $s): string => $rightSeries && (($s['axis'] ?? 'left') === 'right') ? 'right' : 'left';
+    $y = fn(float $v, string $axis): float => $padT + $ih * (1 - min($v, $axis === 'right' ? $rightMax : $leftMax) / ($axis === 'right' ? $rightMax : $leftMax));
 
-    $out = "<svg viewBox=\"0 0 $w $h\" role=\"img\" aria-hidden=\"true\">";
+    $out = "<svg class=\"trend-chart\" viewBox=\"0 0 $w $h\" role=\"img\" aria-label=\"资源趋势图\">";
     foreach ([0, 0.5, 1] as $g) {
         $gy = $padT + $ih * (1 - $g);
         $out .= "<line class=\"grid\" x1=\"$padL\" y1=\"$gy\" x2=\"" . ($w - $padR) . "\" y2=\"$gy\"/>";
-        $out .= "<text class=\"axis\" x=\"4\" y=\"" . ($gy + 3) . "\">" . mon_fnum($max * $g, $max < 10 ? 1 : 0) . "</text>";
+        $out .= "<text class=\"axis\" x=\"4\" y=\"" . ($gy + 3) . "\">" . mon_fnum($leftMax * $g, $leftMax < 10 ? 1 : 0) . "</text>";
+        if ($rightSeries) {
+            $out .= "<text class=\"axis axis-right\" x=\"" . ($w - 4) . "\" y=\"" . ($gy + 3) . "\" text-anchor=\"end\">" . mon_fnum($rightMax * $g, $rightMax < 10 ? 1 : 0) . "</text>";
+        }
     }
     foreach ([0, intdiv($n - 1, 2), $n - 1] as $i) {
         $t = strtotime((string)$rows[$i]['b']);
         $out .= "<text class=\"axis\" x=\"" . $x($i) . "\" y=\"" . ($h - 6) . "\" text-anchor=\"middle\">" . date($labelFmt, $t) . "</text>";
     }
-    foreach ($series as $s) {
+    foreach ($allSeries as $s) {
+        $axis = $axisOf($s);
         $pts = [];
-        foreach ($rows as $i => $r) $pts[] = round($x($i), 1) . ',' . round($y((float)$r[$s['key']]), 1);
+        foreach ($rows as $i => $r) $pts[] = round($x($i), 1) . ',' . round($y((float)$r[$s['key']], $axis), 1);
         if (!empty($s['area']) && $n > 1) {
             $out .= "<polygon points=\"{$padL}," . ($padT + $ih) . " " . implode(' ', $pts) . " " . round($x($n - 1), 1) . "," . ($padT + $ih) . "\" fill=\"{$s['color']}\" opacity=\"0.10\"/>";
         }
         $out .= "<polyline class=\"line\" points=\"" . implode(' ', $pts) . "\" stroke=\"{$s['color']}\"/>";
+        foreach ($rows as $i => $r) {
+            $value = (float)$r[$s['key']];
+            $precision = isset($s['precision']) ? (int)$s['precision'] : ($value < 10 ? 2 : 0);
+            $unit = (string)($s['unit'] ?? '');
+            $tip = mon_e(date($labelFmt, strtotime((string)$r['b'])) . ' · ' . (string)$s['label'] . ' ' . mon_fnum($value, $precision) . $unit);
+            $out .= "<circle class=\"point\" cx=\"" . round($x($i), 1) . "\" cy=\"" . round($y($value, $axis), 1) . "\" r=\"2.4\" fill=\"{$s['color']}\" stroke=\"transparent\" stroke-width=\"9\"><title>$tip</title></circle>";
+        }
     }
     return $out . '</svg>';
 }
@@ -168,7 +185,7 @@ if ($pdo !== null) {
     try {
         $metrics = $pdo->query(
             "SELECT FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(ts)/$bucket)*$bucket) AS b,
-                    ROUND(AVG(cpu_pct)) cpu, ROUND(AVG(load1),2) l1,
+                    MAX(cpu_pct) cpu, ROUND(AVG(load1),2) l1,
                     ROUND(AVG(mem_used*100.0/GREATEST(mem_total,1))) memp,
                     ROUND(AVG(swap_used*100.0/4095.0)) swapp,
                     ROUND(AVG(net_rx_kbps)) rx, ROUND(AVG(net_tx_kbps)) tx
@@ -267,7 +284,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · 锦鲤小果</title>
 <script>(function(){var m=document.cookie.match(/(?:^|;\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem('luckyguo-theme')||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m)document.cookie='luckyguo-theme='+t+'; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.2.0">
+<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.0">
 <link rel="icon" type="image/png" sizes="32x32" href="/usr/themes/luckyguo/favicon-32-v3.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/usr/themes/luckyguo/favicon-16-v3.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/usr/themes/luckyguo/apple-touch-icon-v3.png">
@@ -355,9 +372,10 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
         <div class="grid-2">
             <div class="panel chart">
                 <?= mon_line_chart($metrics, [
-                    ['key' => 'cpu', 'label' => 'CPU %', 'color' => 'var(--accent)', 'area' => true],
-                    ['key' => 'l1', 'label' => '负载 1min', 'color' => 'var(--sage)'],
-                ], $labelFmt) ?>
+                    ['key' => 'cpu', 'label' => 'CPU', 'unit' => '%', 'precision' => 0, 'color' => 'var(--accent)', 'area' => true],
+                ], $labelFmt, 720, 168, [
+                    ['key' => 'l1', 'label' => '负载 1min', 'precision' => 2, 'color' => 'var(--sage)', 'axis' => 'right'],
+                ]) ?>
                 <div class="legend"><span><i style="background:var(--accent)"></i>CPU %</span><span><i style="background:var(--sage)"></i>负载 1min</span></div>
             </div>
             <div class="panel chart">
