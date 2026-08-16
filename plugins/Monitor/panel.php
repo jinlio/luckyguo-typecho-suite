@@ -13,13 +13,26 @@ const MON_STATUS_FILE = '/var/lib/monitor/status.json';
 const MON_ENV_FILE = '/etc/luckyguo-monitor.env';
 const MON_CORES = 2; // 2 vCPU, 负载折算用
 
+function mon_read_status(): array {
+    $raw = @file_get_contents(MON_STATUS_FILE);
+    if ($raw === false) return [[], '监控快照文件不可读'];
+    try {
+        $status = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+    } catch (JsonException $e) {
+        error_log('[monitor] invalid status snapshot: ' . $e->getMessage());
+        return [[], '监控快照格式无效'];
+    }
+    if (!is_array($status)) return [[], '监控快照格式无效'];
+    return [$status, null];
+}
+
 // ajax 分支: 30s 局部刷新的数据源
 if (isset($_GET['ajax'])) {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
-    $monJson = @file_get_contents(MON_STATUS_FILE);
-    if ($monJson === false) { http_response_code(503); echo '{"error":"status unavailable"}'; exit; }
-    echo $monJson;
+    [$monSnapshot, $monStatusError] = mon_read_status();
+    if ($monStatusError !== null) { http_response_code(503); echo '{"error":"status unavailable"}'; exit; }
+    echo json_encode($monSnapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
@@ -29,7 +42,7 @@ function mon_e(?string $s): string { return htmlspecialchars((string)$s, ENT_QUO
 function mon_fnum(float $v, int $d = 0): string { return number_format($v, $d, '.', ','); }
 
 // ---------- 数据源 ----------
-$S = json_decode((string)@file_get_contents(MON_STATUS_FILE), true) ?: [];
+[$S, $monStatusError] = mon_read_status();
 
 $pdo = null;
 $monEnv = @parse_ini_file(MON_ENV_FILE, false, INI_SCANNER_RAW) ?: [];
@@ -40,7 +53,30 @@ try {
         (string)($monEnv['MONITOR_RO_PASS'] ?? ''),
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
     );
-} catch (Throwable $ignored) { $pdo = null; }
+} catch (Throwable $e) {
+    error_log('[monitor] database connection failed: ' . $e->getMessage());
+    $pdo = null;
+}
+
+function mon_db_all(?PDO $pdo, string $label, string $sql): array {
+    if ($pdo === null) return [];
+    try {
+        return $pdo->query($sql)->fetchAll();
+    } catch (Throwable $e) {
+        error_log('[monitor] query ' . $label . ' failed: ' . $e->getMessage());
+        return [];
+    }
+}
+
+function mon_db_row(?PDO $pdo, string $label, string $sql): array {
+    if ($pdo === null) return [];
+    try {
+        return $pdo->query($sql)->fetch() ?: [];
+    } catch (Throwable $e) {
+        error_log('[monitor] query ' . $label . ' failed: ' . $e->getMessage());
+        return [];
+    }
+}
 
 $RANGES = ['24h' => '24 小时', '7d' => '7 天', '30d' => '30 天', '1y' => '1 年'];
 $range = (string)($_GET['range'] ?? '24h');
@@ -202,71 +238,62 @@ $metrics = $traffic = $sites24h = $uptime30 = $codes = $topIps = [];
 $uvDaily = $topPosts = [];
 $todayUv = $todayPv = $totalUv = $totalPv = 0;
 
-if ($pdo !== null) {
-    try {
-        $metrics = $pdo->query(
-            "SELECT FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(ts)/$bucket)*$bucket) AS b,
-                    MAX(cpu_pct) cpu, ROUND(AVG(load1),2) l1,
-                    ROUND(AVG(mem_used*100.0/GREATEST(mem_total,1))) memp,
-                    ROUND(AVG(swap_used*100.0/4095.0)) swapp,
-                    ROUND(AVG(net_rx_kbps)) rx, ROUND(AVG(net_tx_kbps)) tx
-             FROM metrics WHERE ts >= NOW() - INTERVAL $interval GROUP BY b ORDER BY b"
-        )->fetchAll();
-
-        $traffic = $pdo->query(
-            "SELECT FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(ts)/$bucket)*$bucket) AS b,
-                    SUM(requests) req, SUM(s4xx+s5xx) err
-             FROM traffic_min WHERE ts >= NOW() - INTERVAL $interval GROUP BY b ORDER BY b"
-        )->fetchAll();
-
-        $sites24h = $pdo->query(
-            "SELECT target, FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(ts)/900)*900) AS b,
-                    SUM(http_code=0 OR http_code>=500) bad, COUNT(*) n, ROUND(AVG(ttfb_ms)) ttfb
-             FROM site_checks WHERE ts >= NOW() - INTERVAL 1 DAY GROUP BY target, b ORDER BY b"
-        )->fetchAll();
-
-        $uptime30 = $pdo->query(
-            "SELECT target, ROUND(100*SUM(http_code BETWEEN 200 AND 399)/COUNT(*),2) up
-             FROM site_checks WHERE ts >= NOW() - INTERVAL 30 DAY GROUP BY target"
-        )->fetchAll();
-
-        $codes = $pdo->query(
-            "SELECT SUM(s2xx) s2, SUM(s3xx) s3, SUM(s4xx) s4, SUM(s5xx) s5, SUM(requests) req, SUM(bytes_kb) kb
-             FROM traffic_min WHERE ts >= NOW() - INTERVAL 1 DAY"
-        )->fetch() ?: [];
-
-        $topIps = $pdo->query(
-            "SELECT jt.ip, SUM(jt.c) n FROM traffic_min,
-                    JSON_TABLE(top_ips, '$[*]' COLUMNS (ip VARCHAR(45) PATH '$[0]', c INT PATH '$[1]')) jt
-             WHERE ts >= NOW() - INTERVAL 1 DAY GROUP BY jt.ip ORDER BY n DESC LIMIT 8"
-        )->fetchAll();
-
-        $uvDaily = $pdo->query(
-            "SELECT vday AS b, COUNT(*) uv FROM luckyguo_typecho.typecho_luckyguo_visitors
-             WHERE vday >= CURDATE() - INTERVAL 29 DAY GROUP BY vday ORDER BY vday"
-        )->fetchAll();
-
-        $pvDaily = $pdo->query(
-            "SELECT vday, SUM(pv) pv FROM luckyguo_typecho.typecho_luckyguo_visits
-             WHERE vday >= CURDATE() - INTERVAL 29 DAY GROUP BY vday"
-        )->fetchAll();
-        $pvMap = array_column($pvDaily, 'pv', 'vday');
-        foreach ($uvDaily as &$row) $row['pv'] = (int)($pvMap[$row['b']] ?? 0);
-        unset($row);
-
-        $todayUv = (int)$pdo->query("SELECT COUNT(*) c FROM luckyguo_typecho.typecho_luckyguo_visitors WHERE vday=CURDATE()")->fetch()['c'];
-        $todayPv = (int)$pdo->query("SELECT COALESCE(SUM(pv),0) c FROM luckyguo_typecho.typecho_luckyguo_visits WHERE vday=CURDATE()")->fetch()['c'];
-        $totalUv = (int)$pdo->query("SELECT COUNT(DISTINCT vip) c FROM luckyguo_typecho.typecho_luckyguo_visitors")->fetch()['c'];
-        $totalPv = (int)$pdo->query("SELECT COALESCE(SUM(pv),0) c FROM luckyguo_typecho.typecho_luckyguo_visits")->fetch()['c'];
-
-        $topPosts = $pdo->query(
-            "SELECT c.title, SUM(v.views) vv
-             FROM luckyguo_typecho.typecho_luckyguo_views v
-             JOIN luckyguo_typecho.typecho_contents c ON c.cid = v.cid AND c.status='publish'
-             GROUP BY v.cid ORDER BY vv DESC LIMIT 5"
-        )->fetchAll();
-    } catch (Throwable $ignored) { /* 历史区降级显示空 */ }
+$rollup = ['24h' => null, '7d' => 'hourly', '30d' => 'daily', '1y' => 'daily'][$range];
+if ($rollup === null) {
+    $metrics = mon_db_all($pdo, 'raw metrics',
+        "SELECT FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(ts)/$bucket)*$bucket) AS b,
+                MAX(cpu_pct) cpu, ROUND(AVG(load1),2) l1,
+                ROUND(AVG(mem_used*100.0/GREATEST(mem_total,1))) memp,
+                ROUND(AVG(swap_used*100.0/4095.0)) swapp,
+                ROUND(AVG(net_rx_kbps)) rx, ROUND(AVG(net_tx_kbps)) tx
+         FROM metrics WHERE ts >= NOW() - INTERVAL $interval GROUP BY b ORDER BY b");
+    $traffic = mon_db_all($pdo, 'raw traffic',
+        "SELECT FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(ts)/$bucket)*$bucket) AS b,
+                SUM(requests) req, SUM(s4xx+s5xx) err
+         FROM traffic_min WHERE ts >= NOW() - INTERVAL $interval GROUP BY b ORDER BY b");
+} else {
+    $metrics = mon_db_all($pdo, $rollup . ' metrics',
+        "SELECT bucket AS b, cpu, l1, memp, swapp, rx, tx
+         FROM metrics_$rollup WHERE bucket >= NOW() - INTERVAL $interval ORDER BY bucket");
+    $traffic = mon_db_all($pdo, $rollup . ' traffic',
+        "SELECT bucket AS b, requests AS req, s4xx + s5xx AS err
+         FROM traffic_$rollup WHERE bucket >= NOW() - INTERVAL $interval ORDER BY bucket");
 }
+
+$sites24h = mon_db_all($pdo, 'site checks',
+    "SELECT target, FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(ts)/900)*900) AS b,
+            SUM(http_code=0 OR http_code>=500) bad, COUNT(*) n, ROUND(AVG(ttfb_ms)) ttfb
+     FROM site_checks WHERE ts >= NOW() - INTERVAL 1 DAY GROUP BY target, b ORDER BY b");
+$uptime30 = mon_db_all($pdo, 'uptime summary',
+    "SELECT target, ROUND(100*SUM(http_code BETWEEN 200 AND 399)/COUNT(*),2) up
+     FROM site_checks WHERE ts >= NOW() - INTERVAL 30 DAY GROUP BY target");
+$codes = mon_db_row($pdo, 'traffic totals',
+    "SELECT SUM(s2xx) s2, SUM(s3xx) s3, SUM(s4xx) s4, SUM(s5xx) s5, SUM(requests) req, SUM(bytes_kb) kb
+     FROM traffic_min WHERE ts >= NOW() - INTERVAL 1 DAY");
+$topIps = mon_db_all($pdo, 'top IPs',
+    "SELECT jt.ip, SUM(jt.c) n FROM traffic_min,
+            JSON_TABLE(CASE WHEN JSON_VALID(top_ips) THEN top_ips ELSE JSON_ARRAY() END,
+                       '$[*]' COLUMNS (ip VARCHAR(45) PATH '$[0]', c INT PATH '$[1]')) jt
+     WHERE ts >= NOW() - INTERVAL 1 DAY GROUP BY jt.ip ORDER BY n DESC LIMIT 8");
+$uvDaily = mon_db_all($pdo, 'daily visitors',
+    "SELECT vday AS b, COUNT(*) uv FROM luckyguo_typecho.typecho_luckyguo_visitors
+     WHERE vday >= CURDATE() - INTERVAL 29 DAY GROUP BY vday ORDER BY vday");
+$blogStats = mon_db_row($pdo, 'blog totals',
+    "SELECT
+        (SELECT COUNT(*) FROM luckyguo_typecho.typecho_luckyguo_visitors WHERE vday=CURDATE()) today_uv,
+        (SELECT COALESCE(SUM(pv),0) FROM luckyguo_typecho.typecho_luckyguo_visits WHERE vday=CURDATE()) today_pv,
+        (SELECT COALESCE(SUM(uv),0) FROM luckyguo_typecho.typecho_luckyguo_visitors_daily)
+          + (SELECT COUNT(DISTINCT vip) FROM luckyguo_typecho.typecho_luckyguo_visitors) total_uv,
+        (SELECT COALESCE(SUM(pv),0) FROM luckyguo_typecho.typecho_luckyguo_visits) total_pv");
+$todayUv = (int)($blogStats['today_uv'] ?? 0);
+$todayPv = (int)($blogStats['today_pv'] ?? 0);
+$totalUv = (int)($blogStats['total_uv'] ?? 0);
+$totalPv = (int)($blogStats['total_pv'] ?? 0);
+$topPosts = mon_db_all($pdo, 'top posts',
+    "SELECT c.title, SUM(v.views) vv
+     FROM luckyguo_typecho.typecho_luckyguo_views v
+     JOIN luckyguo_typecho.typecho_contents c ON c.cid = v.cid AND c.status='publish'
+     GROUP BY v.cid ORDER BY vv DESC LIMIT 5");
 
 // ---------- 快照取值 ----------
 $cpu = (int)($S['cpu_pct'] ?? 0);
@@ -305,7 +332,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · 锦鲤小果</title>
 <script>(function(){var m=document.cookie.match(/(?:^|;\s*)luckyguo-theme=(dark|light)(?:;|$)/),t=m?m[1]:localStorage.getItem('luckyguo-theme')||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m)document.cookie='luckyguo-theme='+t+'; Max-Age=31536000; Path=/; Domain=.luckyguo.dpdns.org; SameSite=Lax; Secure';document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.8">
+<link rel="stylesheet" href="/usr/plugins/Monitor/style.css?v=1.3.9">
 <link rel="icon" type="image/png" sizes="32x32" href="/usr/themes/luckyguo/favicon-32-v3.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/usr/themes/luckyguo/favicon-16-v3.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/usr/themes/luckyguo/apple-touch-icon-v3.png">
@@ -325,7 +352,7 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
 <main>
     <!-- 概览 -->
     <section>
-        <header><div><p class="eyebrow">OVERVIEW</p><h2>服务器概览</h2></div><span class="hint">2 vCPU · 1.9GB RAM · 40GB 盘 · 已运行 <?= mon_e($upStr) ?></span></header>
+        <header><div><p class="eyebrow">OVERVIEW</p><h2>服务器概览</h2></div><span class="hint<?= $monStatusError !== null ? ' status-warning' : '' ?>"><?= $monStatusError !== null ? mon_e($monStatusError) : '2 vCPU · 1.9GB RAM · 40GB 盘 · 已运行 ' . mon_e($upStr) ?></span></header>
         <div class="cards">
             <?= mon_gauge_card('cpu', 'CPU', $cpu, $cpu . '%', '负载 ' . mon_e((string)($load[0] ?? 0)) . ' / ' . mon_e((string)($load[1] ?? 0)) . ' / ' . mon_e((string)($load[2] ?? 0))) ?>
             <?= mon_gauge_card('mem', '内存', $memPct, mon_fnum((float)$memU) . 'M', '共 ' . mon_fnum((float)$memT) . 'M · swap ' . mon_fnum((float)$swapU) . 'M') ?>
