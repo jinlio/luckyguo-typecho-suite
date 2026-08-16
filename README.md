@@ -4,6 +4,12 @@ Chinese documentation: [README.zh-CN.md](README.zh-CN.md)
 
 Reusable Typecho components developed for the Luckyguo site. This repository keeps the theme, related plugins, and the Typecho 1.3.0 SSRF hardening patch in one versioned bundle because the components share theme state, database conventions, and deployment assumptions.
 
+## Screenshots
+
+![Luckyguo Typecho blog homepage](docs/screenshots/blog-home.jpg)
+
+![Search architecture article](docs/screenshots/search-article.jpg)
+
 ## Contents
 
 - `plugins/LuckyguoAdmin`: shared light/dark theme for the Typecho administrator.

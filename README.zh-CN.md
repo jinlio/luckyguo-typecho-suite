@@ -6,6 +6,12 @@
 
 它不是完整的 Typecho 发行包，也不包含数据库、上传文件、服务器配置、备份文件或任何密钥。这样做的目的，是让代码可以公开复用，同时把每个部署环境独有的配置和数据留在自己的服务器上。
 
+## 前台预览
+
+![Luckyguo Typecho 博客首页](docs/screenshots/blog-home.jpg)
+
+![搜索系统优化文章](docs/screenshots/search-article.jpg)
+
 ## 目录
 
 - [适用范围与边界](#适用范围与边界)
