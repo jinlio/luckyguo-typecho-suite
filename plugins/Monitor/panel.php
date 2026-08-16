@@ -66,6 +66,8 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
         foreach ($series as $s) $leftMax = max($leftMax, (float)$r[$s['key']]);
         foreach ($rightSeries as $s) $rightMax = max($rightMax, (float)$r[$s['key']]);
     }
+    foreach ($series as $s) if (isset($s['axisMax'])) $leftMax = max($leftMax, (float)$s['axisMax']);
+    foreach ($rightSeries as $s) if (isset($s['axisMax'])) $rightMax = max($rightMax, (float)$s['axisMax']);
     $leftMax = mon_nice_max($leftMax);
     $rightMax = $rightSeries ? mon_nice_max($rightMax) : $leftMax;
     $x = fn(int $i): float => $padL + ($n <= 1 ? $iw / 2 : $iw * $i / ($n - 1));
@@ -400,8 +402,8 @@ $monSelf = 'extending.php?panel=Monitor%2Fpanel.php';
             </div>
             <div class="panel chart">
                 <?= mon_line_chart($metrics, [
-                    ['key' => 'memp', 'label' => '内存 %', 'color' => 'var(--accent)', 'area' => true],
-                    ['key' => 'swapp', 'label' => 'Swap %', 'color' => 'var(--sage)'],
+                    ['key' => 'memp', 'label' => '内存 %', 'color' => 'var(--accent)', 'area' => true, 'axisMax' => 100],
+                    ['key' => 'swapp', 'label' => 'Swap %', 'color' => 'var(--sage)', 'axisMax' => 100],
                 ], $labelFmt) ?>
                 <div class="legend"><span><i style="background:var(--accent)"></i>内存 %</span><span><i style="background:var(--sage)"></i>Swap %</span></div>
             </div>
