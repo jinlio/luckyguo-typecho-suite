@@ -21,6 +21,41 @@
   const updateThemeLabel = () => themeToggle?.setAttribute('aria-label', root.dataset.theme === 'dark' ? '切换到浅色主题' : '切换到深色主题');
   updateColor();
   updateThemeLabel();
+
+  const armCommentAvatarFallback = (image) => {
+    if (image.dataset.avatarFallbackArmed === 'true') return;
+    const fallback = image.dataset.avatarFallback;
+    if (!fallback) return;
+    image.dataset.avatarFallbackArmed = 'true';
+    const useFallback = () => {
+      if (image.dataset.avatarFallbackApplied === 'true') return;
+      image.dataset.avatarFallbackApplied = 'true';
+      image.removeAttribute('onerror');
+      image.src = fallback;
+    };
+    if (image.complete && image.naturalWidth > 0) return;
+    const timer = setTimeout(() => {
+      if (image.naturalWidth === 0) useFallback();
+    }, 2800);
+    image.addEventListener('load', () => clearTimeout(timer), { once: true });
+    image.addEventListener('error', () => {
+      clearTimeout(timer);
+      useFallback();
+    }, { once: true });
+  };
+  const commentAvatars = document.querySelectorAll('.comment-author img.avatar[data-avatar-fallback]');
+  if ('IntersectionObserver' in window) {
+    const avatarObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        armCommentAvatarFallback(entry.target);
+        avatarObserver.unobserve(entry.target);
+      });
+    }, { rootMargin: '200px' });
+    commentAvatars.forEach((image) => avatarObserver.observe(image));
+  } else {
+    commentAvatars.forEach(armCommentAvatarFallback);
+  }
   themeToggle?.addEventListener('click', () => {
     const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
     root.classList.add('theme-switching');
