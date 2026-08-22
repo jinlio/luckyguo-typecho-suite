@@ -19,7 +19,7 @@ if ($archiveDescription === '') {
     <meta name="description" content="<?php echo htmlspecialchars($archiveDescription, ENT_QUOTES, 'UTF-8'); ?>">
     <?php $cookie = suite_cookie_config($this->options); $cookieJson = json_encode($cookie, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
     <script>window.SuiteThemeConfig=<?php echo $cookieJson; ?>;(function(){var c=window.SuiteThemeConfig||{name:'suite-theme',domain:''},m=document.cookie.match(new RegExp('(?:^|;\\s*)'+c.name+'=(dark|light)(?:;|$)')),t=m?m[1]:localStorage.getItem(c.name)||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t;})();</script>
-    <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css?v=1.6.16'); ?>">
+    <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css?v=1.6.17'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/comment-form.css?v=1.0.0'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/mac-code.css?v=1.1.4'); ?>">
     <?php $this->header(); ?>

@@ -438,9 +438,11 @@ html.page-leaving .site-footer { opacity: 0; transform: translateY(9px) scale(.9
     margin-top: 30px;
     padding-top: 18px;
     border-top: 1px solid var(--line);
-    max-height: calc(100vh - 250px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    height: min(470px, max(180px, calc(100vh - 250px)));
+    min-height: 180px;
+    overflow-y: scroll;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
     scrollbar-gutter: stable;
     scrollbar-width: thin;
 }
@@ -456,7 +458,7 @@ html.page-leaving .site-footer { opacity: 0; transform: translateY(9px) scale(.9
 .article-toc a span:last-child { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .article-toc a.is-active { color: var(--accent-strong); transform: translateX(3px); }
 .article-toc a.is-active .toc-index { color: var(--accent-strong); }
-.article-toc.is-mobile { max-height: none; margin: 0 0 38px; padding: 18px 0 0; overflow: visible; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.article-toc.is-mobile { height: auto; min-height: 0; margin: 0 0 38px; padding: 18px 0 0; overflow: visible; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .article-toc.is-mobile ol { padding-bottom: 14px; }
 .article-toc.is-mobile a { font-size: 11px; }
 .article-toc[hidden] { display: none !important; }
