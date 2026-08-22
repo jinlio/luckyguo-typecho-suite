@@ -12,7 +12,7 @@
             'after' => '</ol>',
             'dateFormat' => 'Y.m.d H:i',
             'avatarSize' => 44,
-            'defaultAvatar' => $this->options->themeUrl('assets/default-avatar.svg')
+            'defaultAvatar' => $this->options->themeUrl('assets/default-avatar.svg', $this->options->theme)
         ]); ?>
         <?php $comments->pageNav('较新', '较旧', 2, '…'); ?>
     <?php endif; ?>

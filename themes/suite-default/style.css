@@ -500,7 +500,8 @@ html.page-leaving .site-footer { opacity: 0; transform: translateY(9px) scale(.9
 .comment-author img { position: absolute; top: 23px; left: 0; width: 44px; height: 44px; border-radius: 50%; }
 .comment-author .fn { font-size: 13px; font-style: normal; font-weight: 800; }
 .comment-meta { margin-top: 2px; color: var(--ink-soft); font-size: 10px; }
-.comment-content { margin-top: 10px; font-size: 14px; line-height: 1.9; }
+.comment-content { min-width: 0; margin-top: 10px; overflow-wrap: anywhere; word-break: break-word; font-size: 14px; line-height: 1.9; }
+.comment-content a { overflow-wrap: anywhere; word-break: break-all; }
 .comment-content p { margin: 0; }
 .comment-reply { margin-top: 8px; font-size: 10px; font-weight: 700; }
 .comment-reply a:hover { color: var(--accent-strong); }
