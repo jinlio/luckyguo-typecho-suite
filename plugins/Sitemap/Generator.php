@@ -99,7 +99,7 @@ final class Generator extends Contents
         $entry = "  <url>\n";
         $entry .= '    <loc>' . $this->xml($location) . "</loc>\n";
         if ($modified !== null && $modified > 0) {
-            $entry .= '    <lastmod>' . gmdate('c', $modified) . "</lastmod>\n";
+            $entry .= '    <lastmod>' . gmdate("Y-m-d\TH:i:s\Z", $modified) . "</lastmod>\n";
         }
         $entry .= '    <changefreq>' . $changeFrequency . "</changefreq>\n";
         $entry .= '    <priority>' . $priority . "</priority>\n";

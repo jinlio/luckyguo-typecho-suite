@@ -2,6 +2,7 @@ config.inc.php
 *.cnf
 *.env
 *.sql
+!deploy/*.sql
 *.sql.gz
 usr/uploads/
 usr/backups/

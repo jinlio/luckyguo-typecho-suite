@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly Typecho Suite Meilisearch rebuild
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+Unit=typecho-suite-search-rebuild.service
+
+[Install]
+WantedBy=timers.target
