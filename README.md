@@ -67,7 +67,7 @@ git clone https://github.com/jinlio/luckyguo-typecho-suite.git /tmp/typecho-suit
 rsync -a /tmp/typecho-suite/themes/suite-default/ "$TYPECHO\_ROOT/usr/themes/suite-default/"
 rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO\_ROOT/usr/plugins/Sitemap/"
 
-Select `suite-default` in Typecho Appearance and fill in its settings. To add a per-user avatar URL field to Typecho's Profile page and use it instead of the Gravatar preview, apply `patches/typecho-1.3.0-personal-avatar.patch` to the matching Typecho 1.3.0 source tree first. The URL is stored in the current user's personal options; leaving it empty falls back to Gravatar. Back up `config.inc.php`, the database, `usr/themes`, `usr/plugins`, and `usr/uploads` before upgrades.
+Select `suite-default` in Typecho Appearance and fill in its settings. To add avatar upload and avatar URL fields to Typecho's Profile page, apply `patches/typecho-1.3.0-personal-avatar.patch` to the matching Typecho 1.3.0 source tree first. Uploaded files are stored under `usr/uploads/avatars`; the URL is stored in the current user's personal options. Leaving both empty uses the Gravatar matching the email address. Comment avatars fall back to the theme's bundled default avatar when Gravatar cannot be loaded. Back up `config.inc.php`, the database, `usr/themes`, `usr/plugins`, and `usr/uploads` before upgrades.
 
 ## Theme configuration
 

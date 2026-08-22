@@ -69,7 +69,7 @@ rsync -a /tmp/typecho-suite/themes/suite-default/ "$TYPECHO_ROOT/usr/themes/suit
 rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/"
 ```
 
-在 Typecho 后台的“外观”中启用 `suite-default`，然后填写主题配置。若希望在“个人设置”中直接填写头像地址并替换 Gravatar 预览，请先按目标 Typecho 1.3.0 源码版本应用 `patches/typecho-1.3.0-personal-avatar.patch`；头像地址保存在当前用户的个人选项中，留空会回退到 Gravatar。升级前先备份 `config.inc.php`、数据库、`usr/themes`、`usr/plugins` 和 `usr/uploads`。
+在 Typecho 后台的“外观”中启用 `suite-default`，然后填写主题配置。若希望在“个人设置”中上传头像或填写头像地址，请先按目标 Typecho 1.3.0 源码版本应用 `patches/typecho-1.3.0-personal-avatar.patch`；上传文件会保存到 `usr/uploads/avatars`，头像地址保存在当前用户的个人选项中，留空时继续使用邮箱对应的 Gravatar。评论头像抓取失败时会回退到主题内置默认头像。升级前先备份 `config.inc.php`、数据库、`usr/themes`、`usr/plugins` 和 `usr/uploads`。
 
 ## 主题配置
 

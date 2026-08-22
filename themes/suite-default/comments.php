@@ -11,7 +11,8 @@
             'before' => '<ol class="comment-list">',
             'after' => '</ol>',
             'dateFormat' => 'Y.m.d H:i',
-            'avatarSize' => 44
+            'avatarSize' => 44,
+            'defaultAvatar' => $this->options->themeUrl('assets/default-avatar.svg')
         ]); ?>
         <?php $comments->pageNav('较新', '较旧', 2, '…'); ?>
     <?php endif; ?>
@@ -30,7 +31,7 @@
                     </div>
                     <div class="form-grid">
                         <p><label for="author">称呼 <span aria-hidden="true">*</span></label><input type="text" name="author" id="author" autocomplete="nickname" placeholder="想被怎么称呼?" value="<?php $this->remember('author'); ?>" required><small class="field-hint">公开显示在评论旁</small></p>
-                        <p><label for="mail">Email<?php if ($this->options->commentsRequireMail): ?> <span aria-hidden="true">*</span><?php endif; ?></label><input type="email" name="mail" id="mail" autocomplete="email" placeholder="name@example.com" value="<?php $this->remember('mail'); ?>"<?php if ($this->options->commentsRequireMail): ?> required<?php endif; ?>><small class="field-hint">仅用于 Gravatar 头像与回复通知, 不会公开</small></p>
+                        <p><label for="mail">Email<?php if ($this->options->commentsRequireMail): ?> <span aria-hidden="true">*</span><?php endif; ?></label><input type="email" name="mail" id="mail" autocomplete="email" placeholder="name@example.com" value="<?php $this->remember('mail'); ?>"<?php if ($this->options->commentsRequireMail): ?> required<?php endif; ?>><small class="field-hint">用于按邮箱匹配头像与回复通知, 不会公开</small></p>
                         <p><label for="url">网站<?php if ($this->options->commentsRequireUrl): ?> <span aria-hidden="true">*</span><?php endif; ?></label><input type="url" name="url" id="url" autocomplete="url" placeholder="https://your.site (选填)" value="<?php $this->remember('url'); ?>"<?php if ($this->options->commentsRequireUrl): ?> required<?php endif; ?>><small class="field-hint">留空也行; 添加后会自动加 rel="nofollow"</small></p>
                     </div>
                 <?php endif; ?>
