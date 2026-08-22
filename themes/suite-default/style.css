@@ -34,11 +34,11 @@
 [data-theme="dark"] .accent-green { --accent: #86c1ad; --accent-strong: #a5d6c6; --accent-soft: #2c473e; }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; overflow-x: hidden; }
+html { scroll-behavior: smooth; overflow-x: clip; }
 body {
     min-width: 320px;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     margin: 0;
     background: var(--bg);
     color: var(--ink);
@@ -429,7 +429,7 @@ html.page-leaving .site-footer { opacity: 0; transform: translateY(9px) scale(.9
 .article-content pre code { padding: 0; background: transparent; color: inherit; }
 .article-content table { display: block; width: 100%; max-width: 100%; margin: 2em 0; overflow-x: auto; border-collapse: collapse; }
 .article-content th, .article-content td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; }
-.article-aside { position: sticky; top: 110px; min-width: 0; max-width: 100%; padding-top: 18px; border-top: 2px solid var(--ink); }
+.article-aside { position: sticky; top: 110px; align-self: start; min-width: 0; max-width: 100%; padding-top: 18px; border-top: 2px solid var(--ink); }
 .article-aside > p { margin: 0 0 16px; color: var(--sage); font-size: 9px; font-weight: 800; letter-spacing: .1em; }
 .article-aside > .suite-avatar { display: block; width: 62px; height: 62px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 12px; object-fit: cover; }
 .article-aside > strong, .article-aside > span { display: block; }
