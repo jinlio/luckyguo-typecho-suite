@@ -1,0 +1,20 @@
+[Unit]
+Description=Typecho Suite Meilisearch full rebuild
+After=network-online.target mysqld.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/local/bin/typecho-suite-search-rebuild
+Environment=TYPECHO_ROOT=/var/www/typecho
+Environment=TYPECHO_SUITE_SEARCH_REBUILD_CONFIG=/etc/typecho-suite/search-rebuild.env
+RuntimeDirectory=typecho-suite-search
+RuntimeDirectoryMode=0750
+TimeoutStartSec=3600
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/run/typecho-suite-search

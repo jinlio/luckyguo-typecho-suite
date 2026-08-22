@@ -1,10 +1,11 @@
--- Pre-aggregated monitor history for the 7-day, 30-day, and 1-year panels.
--- Safe to run repeatedly. The collector refreshes the current hour and day.
+-- Migration for monitor installations created before swap_total was collected.
+-- New installations only need create-suite-monitor.sql. Run this once before
+-- deploying the current collector, then rerun it to rebuild existing rollups.
+ALTER TABLE metrics ADD COLUMN IF NOT EXISTS swap_total INT UNSIGNED NOT NULL DEFAULT 0 AFTER mem_used;
 
 -- The collector refreshes rollups with INSERT ... SELECT from the raw tables.
--- Keep this access scoped to the monitoring schema and source tables only.
-GRANT SELECT ON luckyguo_monitor.metrics TO 'luckyguo_monitor_rw'@'localhost';
-GRANT SELECT ON luckyguo_monitor.traffic_min TO 'luckyguo_monitor_rw'@'localhost';
+-- Grant only the required tables in your own database and account. The exact
+-- database/user names are intentionally omitted from this reusable example.
 
 CREATE TABLE IF NOT EXISTS metrics_hourly (
     bucket DATETIME NOT NULL,
@@ -35,7 +36,7 @@ CREATE TABLE IF NOT EXISTS traffic_daily LIKE traffic_hourly;
 
 INSERT INTO metrics_hourly (bucket, samples, cpu, l1, memp, swapp, rx, tx)
 SELECT DATE_FORMAT(ts, '%Y-%m-%d %H:00:00'), COUNT(*), MAX(cpu_pct), ROUND(AVG(load1), 2),
-       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))), ROUND(AVG(swap_used * 100.0 / 4095.0)),
+       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))), ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used * 100.0 / swap_total ELSE 0 END)),
        ROUND(AVG(net_rx_kbps)), ROUND(AVG(net_tx_kbps))
 FROM metrics
 GROUP BY DATE_FORMAT(ts, '%Y-%m-%d %H:00:00')
@@ -45,7 +46,7 @@ ON DUPLICATE KEY UPDATE
 
 INSERT INTO metrics_daily (bucket, samples, cpu, l1, memp, swapp, rx, tx)
 SELECT DATE(ts), COUNT(*), MAX(cpu_pct), ROUND(AVG(load1), 2),
-       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))), ROUND(AVG(swap_used * 100.0 / 4095.0)),
+       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))), ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used * 100.0 / swap_total ELSE 0 END)),
        ROUND(AVG(net_rx_kbps)), ROUND(AVG(net_tx_kbps))
 FROM metrics
 GROUP BY DATE(ts)

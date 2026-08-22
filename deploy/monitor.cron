@@ -1,2 +1,2 @@
-* * * * * root /usr/local/sbin/monitor-collect.sh >> /var/log/monitor-collect.log 2>&1
-17 4 * * * root mysql --defaults-extra-file=/etc/luckyguo-monitor-rw.cnf luckyguo_monitor -e "DELETE FROM metrics WHERE ts < NOW() - INTERVAL 45 DAY; DELETE FROM site_checks WHERE ts < NOW() - INTERVAL 45 DAY; DELETE FROM traffic_min WHERE ts < NOW() - INTERVAL 45 DAY; DELETE FROM metrics_hourly WHERE bucket < NOW() - INTERVAL 45 DAY; DELETE FROM traffic_hourly WHERE bucket < NOW() - INTERVAL 45 DAY; DELETE FROM metrics_daily WHERE bucket < NOW() - INTERVAL 400 DAY; DELETE FROM traffic_daily WHERE bucket < NOW() - INTERVAL 400 DAY;"
+* * * * * root TYPECHO_SUITE_MONITOR_CONFIG=/etc/typecho-suite/monitor.env /usr/local/sbin/typecho-suite-monitor-collect >> /var/log/typecho-suite-monitor.log 2>&1
+17 4 * * * root TYPECHO_SUITE_MONITOR_CONFIG=/etc/typecho-suite/monitor.env /usr/local/sbin/typecho-suite-monitor-prune >> /var/log/typecho-suite-monitor.log 2>&1
