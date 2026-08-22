@@ -16,6 +16,28 @@ This repository contains no personal domain, author identity, production databas
 | `deploy/create-suite-monitor.sql` | Optional monitor database schema | No |
 | `deploy/create-suite-stats.sql` | Optional anonymous statistics schema | No |
 
+## Screenshots
+
+These are sanitized demonstration captures from the reusable components. Monitor values are synthetic and do not represent a production host.
+
+### Theme home
+
+![Suite Default theme home in light mode](docs/screenshots/blog-home-top-light.jpg)
+
+![Suite Default theme home in dark mode](docs/screenshots/blog-home-top-dark.jpg)
+
+### Article reading and table of contents
+
+![Article reading layout and table of contents in light mode](docs/screenshots/search-article-body-light.jpg)
+
+![Article reading layout and table of contents in dark mode](docs/screenshots/search-article-body-dark.jpg)
+
+### SuiteMonitor administration panel
+
+![SuiteMonitor resource overview in light mode](docs/screenshots/monitor-overview-light.jpg)
+
+![SuiteMonitor resource overview in dark mode](docs/screenshots/monitor-overview-dark.jpg)
+
 ## Support
 
 Target: Typecho 1.3.0, PHP 7.4+, MySQL 8.0+ with the `Mysqli` adapter, and Nginx or Apache. The theme works without custom tables. Search requires `Mysqli` for its fallback and rejects unsupported adapters explicitly. The optional search queue is detected automatically; without `create-suite-search.sql`, search still works through MySQL LIKE and live Meilisearch writes remain optional.

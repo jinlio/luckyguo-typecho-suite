@@ -14,6 +14,28 @@
 | `deploy/create-suite-monitor.sql` | 可选监控数据库表结构 | 否 |
 | `deploy/` | 数据表、采集器、systemd 和示例配置 | 按需 |
 
+## 截图展示
+
+以下截图使用公开版组件的中性演示内容生成；监控数值为模拟数据，不代表任何生产服务器。
+
+### 主题首页
+
+![Suite Default 主题首页浅色模式](docs/screenshots/blog-home-top-light.jpg)
+
+![Suite Default 主题首页深色模式](docs/screenshots/blog-home-top-dark.jpg)
+
+### 文章阅读与右侧目录
+
+![文章阅读布局与右侧目录浅色模式](docs/screenshots/search-article-body-light.jpg)
+
+![文章阅读布局与右侧目录深色模式](docs/screenshots/search-article-body-dark.jpg)
+
+### SuiteMonitor 后台资源监控
+
+![SuiteMonitor 资源概览浅色模式](docs/screenshots/monitor-overview-light.jpg)
+
+![SuiteMonitor 资源概览深色模式](docs/screenshots/monitor-overview-dark.jpg)
+
 ## 运行要求
 
 目标环境为 Typecho 1.3.0、PHP 7.4 及以上、MySQL 8.0 及以上（`Mysqli` 适配器），以及 Nginx 或 Apache。主题不依赖自定义数据表；启用统计时才需要创建 `suite_*` 表。搜索插件的 MySQL 降级路径需要 `Mysqli`。搜索队列表会自动探测；未创建 `create-suite-search.sql` 时，搜索仍可使用 MySQL LIKE，Meilisearch 实时写入也可以保持关闭。
