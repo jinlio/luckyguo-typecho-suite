@@ -28,7 +28,7 @@ index 5f8ea30..0d6019f 100644
                  <h2><?php $user->screenName(); ?></h2>
                  <p><?php $user->name(); ?></p>
 diff --git a/var/Widget/Users/Profile.php b/var/Widget/Users/Profile.php
-index 02b1b7b..5256b88 100644
+index 02b1b7b..c69e09d 100644
 --- a/var/Widget/Users/Profile.php
 +++ b/var/Widget/Users/Profile.php
 @@ -192,10 +192,29 @@ class Profile extends Users implements ActionInterface
@@ -61,18 +61,19 @@ index 02b1b7b..5256b88 100644
          /** 设置高亮 */
          Notice::alloc()->highlight('user-' . $this->user->uid);
  
-@@ -225,6 +244,10 @@ class Profile extends Users implements ActionInterface
+@@ -225,6 +244,11 @@ class Profile extends Users implements ActionInterface
          $url = new Form\Element\Url('url', null, null, _t('个人主页地址'), _t('此用户的个人主页地址, 请用 <code>https://</code> 开头.'));
          $form->addInput($url);
  
 +        /** 头像地址 */
 +        $avatarUrl = new Form\Element\Url('avatarUrl', null, null, _t('头像地址'), _t('填写图片的 HTTP(S) 地址, 留空时继续使用 Gravatar.'));
++        $avatarUrl->addRule('url', _t('头像地址格式错误'));
 +        $form->addInput($avatarUrl);
 +
          /** 电子邮箱地址 */
          $mail = new Form\Element\Text('mail', null, null, _t('邮件地址') . ' *', _t('电子邮箱地址将作为此用户的主要联系方式.')
              . '<br />' . _t('请不要与系统中现有的电子邮箱地址重复.'));
-@@ -241,6 +264,7 @@ class Profile extends Users implements ActionInterface
+@@ -241,6 +265,7 @@ class Profile extends Users implements ActionInterface
  
          $screenName->value($this->user->screenName);
          $url->value($this->user->url);
