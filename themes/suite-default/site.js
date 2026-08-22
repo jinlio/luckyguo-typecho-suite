@@ -198,7 +198,10 @@
           const tocRect = articleToc.getBoundingClientRect();
           const linkRect = link.getBoundingClientRect();
           if (linkRect.top < tocRect.top || linkRect.bottom > tocRect.bottom) {
-            link.scrollIntoView({ block: 'nearest' });
+            const offset = linkRect.top < tocRect.top
+              ? linkRect.top - tocRect.top
+              : linkRect.bottom - tocRect.bottom;
+            articleToc.scrollTop += offset;
           }
         }
       };
