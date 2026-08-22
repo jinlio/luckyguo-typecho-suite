@@ -51,7 +51,7 @@ rsync -a /tmp/typecho-suite/themes/suite-default/ "$TYPECHO_ROOT/usr/themes/suit
 rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/"
 ```
 
-Select `suite-default` in Typecho Appearance and fill in its settings. Back up `config.inc.php`, the database, `usr/themes`, `usr/plugins`, and `usr/uploads` before upgrades.
+Select `suite-default` in Typecho Appearance and fill in its settings. To add a per-user avatar URL field to Typecho's Profile page and use it instead of the Gravatar preview, apply `patches/typecho-1.3.0-personal-avatar.patch` to the matching Typecho 1.3.0 source tree first. The URL is stored in the current user's personal options; leaving it empty falls back to Gravatar. Back up `config.inc.php`, the database, `usr/themes`, `usr/plugins`, and `usr/uploads` before upgrades.
 
 ## Theme configuration
 

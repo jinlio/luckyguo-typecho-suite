@@ -1,0 +1,82 @@
+diff --git a/admin/profile.php b/admin/profile.php
+index 5f8ea30..0d6019f 100644
+--- a/admin/profile.php
++++ b/admin/profile.php
+@@ -4,6 +4,13 @@ include 'header.php';
+ include 'menu.php';
+ 
+ $stat = \Widget\Stat::alloc();
++$avatarUrl = trim((string) ($user->personalOptions->avatarUrl ?? ''));
++$avatarIsCustom = (bool) preg_match('/^https?:\/\//i', $avatarUrl);
++$avatarSrc = $avatarIsCustom
++    ? $avatarUrl
++    : \Typecho\Common::gravatarUrl($user->mail, 220, 'X', 'mm', $request->isSecure());
++$avatarHref = $avatarIsCustom ? $avatarUrl : 'https://gravatar.com/';
++$avatarTitle = $avatarIsCustom ? _t('打开头像地址') : _t('在 Gravatar 上修改头像');
+ ?>
+ 
+ <main class="main">
+@@ -11,8 +18,8 @@ $stat = \Widget\Stat::alloc();
+         <?php include 'page-title.php'; ?>
+         <div class="row typecho-page-main">
+             <div class="col-mb-12 col-tb-3">
+-                <p><a href="https://gravatar.com/"
+-                      title="<?php _e('在 Gravatar 上修改头像'); ?>"><?php echo '<img class="profile-avatar" src="' . \Typecho\Common::gravatarUrl($user->mail, 220, 'X', 'mm', $request->isSecure()) . '" alt="' . $user->screenName . '" />'; ?></a>
++                <p><a href="<?php echo htmlspecialchars($avatarHref, ENT_QUOTES, 'UTF-8'); ?>"
++                      title="<?php echo htmlspecialchars($avatarTitle, ENT_QUOTES, 'UTF-8'); ?>"><?php echo '<img class="profile-avatar" src="' . htmlspecialchars($avatarSrc, ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($user->screenName, ENT_QUOTES, 'UTF-8') . '" />'; ?></a>
+                 </p>
+                 <h2><?php $user->screenName(); ?></h2>
+                 <p><?php $user->name(); ?></p>
+diff --git a/var/Widget/Users/Profile.php b/var/Widget/Users/Profile.php
+index 02b1b7b..5256b88 100644
+--- a/var/Widget/Users/Profile.php
++++ b/var/Widget/Users/Profile.php
+@@ -192,10 +192,29 @@ class Profile extends Users implements ActionInterface
+         /** 取出数据 */
+         $user = $this->request->from('mail', 'screenName', 'url');
+         $user['screenName'] = empty($user['screenName']) ? $user['name'] : $user['screenName'];
++        $avatarUrl = trim((string) $this->request->get('avatarUrl', ''));
+ 
+         /** 更新数据 */
+         $this->update($user, $this->db->sql()->where('uid = ?', $this->user->uid));
+ 
++        /** 保存用户头像地址到个人选项 */
++        $avatarOption = 'avatarUrl';
++        $avatarExists = $this->db->fetchObject($this->db->select(['COUNT(*)' => 'num'])
++            ->from('table.options')->where('name = ? AND user = ?', $avatarOption, $this->user->uid))->num > 0;
++
++        if ($avatarExists) {
++            Options::alloc()->update(
++                ['value' => $avatarUrl],
++                $this->db->sql()->where('name = ? AND user = ?', $avatarOption, $this->user->uid)
++            );
++        } else {
++            Options::alloc()->insert([
++                'name'  => $avatarOption,
++                'value' => $avatarUrl,
++                'user'  => $this->user->uid
++            ]);
++        }
++
+         /** 设置高亮 */
+         Notice::alloc()->highlight('user-' . $this->user->uid);
+ 
+@@ -225,6 +244,10 @@ class Profile extends Users implements ActionInterface
+         $url = new Form\Element\Url('url', null, null, _t('个人主页地址'), _t('此用户的个人主页地址, 请用 <code>https://</code> 开头.'));
+         $form->addInput($url);
+ 
++        /** 头像地址 */
++        $avatarUrl = new Form\Element\Url('avatarUrl', null, null, _t('头像地址'), _t('填写图片的 HTTP(S) 地址, 留空时继续使用 Gravatar.'));
++        $form->addInput($avatarUrl);
++
+         /** 电子邮箱地址 */
+         $mail = new Form\Element\Text('mail', null, null, _t('邮件地址') . ' *', _t('电子邮箱地址将作为此用户的主要联系方式.')
+             . '<br />' . _t('请不要与系统中现有的电子邮箱地址重复.'));
+@@ -241,6 +264,7 @@ class Profile extends Users implements ActionInterface
+ 
+         $screenName->value($this->user->screenName);
+         $url->value($this->user->url);
++        $avatarUrl->value($this->user->personalOptions->avatarUrl ?? '');
+         $mail->value($this->user->mail);
+ 
+         /** 给表单增加规则 */
