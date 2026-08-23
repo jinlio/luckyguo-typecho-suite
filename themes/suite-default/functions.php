@@ -18,6 +18,13 @@ function themeConfig($form)
     $form->addInput($text('aboutFocus', '关于页方向', '按你的实际方向填写'));
     $form->addInput($text('aboutStack', '关于页技术栈', '按你的实际技术栈填写'));
     $form->addInput($text('aboutStatus', '关于页状态', '持续学习与构建'));
+    $aboutBody = new \Typecho\Widget\Helper\Form\Element\Textarea(
+        'aboutBody',
+        null,
+        '填写关于你的详细介绍；留空时使用关于页面本身的正文。',
+        _t('关于页详细简介')
+    );
+    $form->addInput($aboutBody);
     $form->addInput($text('homeEyebrow', '首页眉题', 'JOURNAL / PERSONAL SPACE'));
     $form->addInput($text('homeSignature', '首页签名', 'LEARN · BUILD · LIVE'));
     $form->addInput($text('homeSignatureNote', '首页签名说明', '慢慢写，也认真生活。'));

@@ -15,7 +15,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  * 数据由外部采集器写入配置的状态文件和监控数据库，本插件只读渲染
  *
  * @package SuiteMonitor
- * @author suite
+ * @author luckyguo
  * @version 1.3.0
  * @link https://github.com/jinlio/luckyguo-typecho-suite
  */

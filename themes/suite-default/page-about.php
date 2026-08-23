@@ -27,7 +27,7 @@ $this->need('header.php');
             <h2 id="about-story-title">一些关于我的事</h2>
             <span>学习、实践，也记录过程。</span>
         </header>
-        <div class="about-copy"><?php $this->content(); ?></div>
+        <div class="about-copy"><?php $aboutBody = trim((string) suite_option($this->options, 'aboutBody', '')); if ($aboutBody !== ''): echo nl2br(htmlspecialchars($aboutBody, ENT_QUOTES, 'UTF-8')); else: $this->content(); endif; ?></div>
     </section>
 
 </main>

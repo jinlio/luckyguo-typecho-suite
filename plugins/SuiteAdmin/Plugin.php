@@ -14,7 +14,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  * 主题遵循前台 cookie suite-theme (light/dark)
  *
  * @package SuiteAdmin
- * @author suite
+ * @author luckyguo
  * @version 1.3.0
  * @link https://github.com/jinlio/luckyguo-typecho-suite
  */

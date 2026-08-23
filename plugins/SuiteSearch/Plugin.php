@@ -12,7 +12,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  * Meilisearch-backed Typecho search with a parameterized LIKE fallback.
  *
  * @package SuiteSearch
- * @author suite
+ * @author luckyguo
  * @version 1.1.0
  * @link https://github.com/jinlio/luckyguo-typecho-suite
  */

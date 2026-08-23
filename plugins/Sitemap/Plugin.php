@@ -16,7 +16,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  * Based on joyqi/typecho-plugin-sitemap v1.0.0 (MIT).
  *
  * @package Sitemap
- * @author joyqi, suite
+ * @author luckyguo
  * @version 1.1.0
  * @since 1.2.1
  * @link https://github.com/joyqi/typecho-plugin-sitemap

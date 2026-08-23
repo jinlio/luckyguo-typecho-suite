@@ -3,7 +3,7 @@
  * A configurable Typecho journal theme
  *
  * @package Suite Default Journal
- * @author suite
+ * @author luckyguo
  * @version 1.7.0
  * @link https://github.com/jinlio/luckyguo-typecho-suite
  */

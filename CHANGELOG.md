@@ -44,4 +44,5 @@
 - Added the new GUI and log collector behavior to `README.md` and `README.zh-CN.md`.
 - Refined the monitor log presentation with a compact toolbar, event total, clearer filters, and responsive table spacing; clarified the GUI labels for personal branding and the default Console/Home/Landing naming.
 - Documented the exact Typecho Admin -> Plugins -> SuiteMonitor -> Settings location for personal branding, navigation, and footer controls in both README files.
+- Added a dedicated theme setting for the long About-page introduction, reduced chart redraw flicker by updating SVGs only after a new sample, relaxed false gap detection for normal bucket drift, matched monitor avatar corners to the homepage, and standardized package author metadata to `luckyguo`.
 - Not yet verified: PHP 7.4 runtime behavior, browser screenshots at mobile/desktop sizes, and production deployment.

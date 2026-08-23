@@ -154,7 +154,9 @@ function mon_chart_quality(array $rows): array {
     }
     sort($diffs, SORT_NUMERIC);
     $median = $diffs ? $diffs[(int) floor((count($diffs) - 1) / 2)] : 300;
-    $threshold = max(450, $median * 1.8);
+    // A normal five-minute bucket can drift across a boundary during a busy
+    // minute. Only mark a real outage after a materially longer interval.
+    $threshold = max(900, $median * 2.5);
     $gapAfter = [];
     foreach ($times as $index => $time) {
         if ($index > 0 && ($time - $times[$index - 1]) > $threshold) $gapAfter[] = $index - 1;
@@ -624,7 +626,7 @@ $monitorChecks = [
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · <?= mon_e($monitorBrandName) ?></title>
 <script>window.SuiteMonitorThemeConfig=<?= json_encode(['name' => MON_COOKIE_NAME, 'domain' => MON_COOKIE_DOMAIN, 'defaultTheme' => $defaultTheme], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;(function(){var c=window.SuiteMonitorThemeConfig,m=document.cookie.match(new RegExp('(?:^|;\\s*)'+c.name+'=(dark|light)(?:;|$)')),saved='';try{saved=localStorage.getItem(c.name)||'';}catch(e){}var t=m?m[1]:saved||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m&&!saved&&(c.defaultTheme==='dark'||c.defaultTheme==='light'))t=c.defaultTheme;document.documentElement.dataset.theme=t;})();</script>
-<link rel="stylesheet" href="<?= mon_e($monitorPluginUrl . '/style.css?v=2.0.0') ?>">
+<link rel="stylesheet" href="<?= mon_e($monitorPluginUrl . '/style.css?v=2.1.0') ?>">
 </head>
 <body>
 <header class="site-header">
@@ -868,7 +870,7 @@ $monitorChecks = [
   document.addEventListener('pointermove',function(e){var point=e.target.closest&&e.target.closest('.point,.uptime-point');if(point)showTip(point,e.clientX,e.clientY);else hideTip();});
   document.addEventListener('pointerleave',hideTip);window.addEventListener('blur',hideTip);window.addEventListener('scroll',hideTip,{passive:true});
   // 30s 局部刷新快照数据 (图表随页面刷新)
-  var C=2*Math.PI*30;
+  var C=2*Math.PI*30,chartStamp=<?= json_encode($metricsQuality['latest']) ?>;
   var setG=function(k,pct,v){pct=Math.max(0,Math.min(100,Math.round(pct)));var a=document.querySelector('[data-ga="'+k+'"]');if(a)a.style.strokeDashoffset=(C*(1-pct/100)).toFixed(1);var t=document.querySelector('[data-gv="'+k+'"]');if(t)t.textContent=pct+'%';var g=a&&a.closest('.gauge');if(g){g.classList.remove('warn','crit');if(pct>=85)g.classList.add('crit');else if(pct>=70)g.classList.add('warn');}var el=document.querySelector('[data-f="'+k+'_v"]');if(el&&v!==undefined)el.textContent=v;};
   var poll=function(){fetch('<?= $monSelf ?>&ajax=1&range=<?= mon_e($range) ?>',{cache:'no-store'}).then(function(r){return r.json();}).then(function(payload){
     var d=payload.snapshot||payload;
@@ -878,7 +880,7 @@ $monitorChecks = [
     setG('disk',d.disk_total_mb?d.disk_used_mb*100/d.disk_total_mb:0,(d.disk_used_mb/1024).toFixed(1)+'G');
     setG('load',d.load?d.load[0]/<?= MON_CORES ?>*100:0,d.load?d.load[0]:'-');
     var mr=document.querySelector('[data-f="min_req"]');if(mr&&d.traffic)mr.textContent=d.traffic.requests;
-    if(payload.charts)for(var chartKey in payload.charts){var panel=document.querySelector('[data-chart-key="'+chartKey+'"]');if(!panel)continue;var old=panel.querySelector('.trend-chart,.chart-empty');if(old)old.outerHTML=payload.charts[chartKey];}
+    if(payload.charts&&payload.quality&&payload.quality.latest!==chartStamp){for(var chartKey in payload.charts){var panel=document.querySelector('[data-chart-key="'+chartKey+'"]');if(!panel)continue;var old=panel.querySelector('.trend-chart,.chart-empty');if(old)old.outerHTML=payload.charts[chartKey];}chartStamp=payload.quality.latest;}
     if(payload.quality){var quality=document.querySelector('[data-chart-quality]');if(quality){quality.textContent=payload.quality.latest==='-'?'暂无采样数据':('最后采集 '+payload.quality.latest+(payload.quality.gaps>0?' · '+payload.quality.gaps+' 处数据缺口':''));quality.classList.toggle('status-warning',payload.quality.gaps>0);}}
     if(d.services)for(var k in d.services){var dot=document.querySelector('[data-svc="'+k+'"]');var st=document.querySelector('[data-svc-t="'+k+'"]');var ok=d.services[k]==='active';if(dot){dot.classList.remove('ok','bad');dot.classList.add(ok?'ok':'bad');}if(st)st.textContent=d.services[k];}
     if(d.sites)for(var s in d.sites){var c=d.sites[s].code,ok2=c>=200&&c<400;var cd=document.querySelector('[data-site-code="'+s+'"]');if(cd){cd.textContent=c||'—';cd.classList.remove('ok','bad');cd.classList.add(ok2?'ok':'bad');}var tt=document.querySelector('[data-site-ttfb="'+s+'"]');if(tt)tt.textContent=d.sites[s].ttfb_ms;var sd=document.querySelector('[data-site-dot="'+s+'"]');if(sd){sd.classList.remove('ok','bad');sd.classList.add(ok2?'ok':'bad');}}
