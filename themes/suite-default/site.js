@@ -83,6 +83,24 @@
 
   const searchToggle = document.querySelector('.search-toggle');
   const searchBar = document.querySelector('.search-bar');
+  const navToggle = document.querySelector('.nav-toggle');
+  const siteNav = document.querySelector('.site-nav');
+  const setNavOpen = (open) => {
+    siteNav?.classList.toggle('is-open', open);
+    navToggle?.setAttribute('aria-expanded', String(open));
+    navToggle?.setAttribute('aria-label', open ? '关闭导航菜单' : '打开导航菜单');
+  };
+  navToggle?.addEventListener('click', () => {
+    setNavOpen(!(siteNav?.classList.contains('is-open') ?? false));
+  });
+  siteNav?.addEventListener('click', (event) => {
+    if (event.target.closest('a')) setNavOpen(false);
+  });
+  addEventListener('resize', () => {
+    if (innerWidth > 820) setNavOpen(false);
+  }, { passive: true });
+  const shortcut = document.querySelector('[data-search-shortcut]');
+  if (shortcut && !/Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)) shortcut.textContent = 'Ctrl K';
   const setSearchOpen = (open) => {
     searchBar?.classList.toggle('open', open);
     searchToggle?.setAttribute('aria-expanded', String(open));
@@ -101,6 +119,9 @@
     if (event.key === 'Escape' && searchBar?.classList.contains('open')) {
       setSearchOpen(false);
       searchToggle?.focus();
+    } else if (event.key === 'Escape' && siteNav?.classList.contains('is-open')) {
+      setNavOpen(false);
+      navToggle?.focus();
     }
   });
 
@@ -125,6 +146,16 @@
     root.classList.add('page-leaving');
     setTimeout(() => HTMLFormElement.prototype.submit.call(searchBar), 230);
   });
+
+  const contextBack = document.querySelector('[data-context-back]');
+  if (contextBack && document.referrer) {
+    try {
+      const referrer = new URL(document.referrer);
+      if (referrer.origin === location.origin && referrer.pathname !== location.pathname) {
+        contextBack.href = referrer.href;
+      }
+    } catch (e) {}
+  }
 
   const header = document.querySelector('.site-header');
   const article = document.querySelector('.article[data-reading-progress="on"]');

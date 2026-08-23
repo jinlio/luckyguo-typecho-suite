@@ -11,7 +11,7 @@
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 $this->need('header.php');
 ?>
-<main class="page-shell">
+<main id="main-content" class="page-shell">
     <?php if ($this->is('index')): ?>
     <section class="blog-intro">
         <div class="journal-identity">
@@ -63,9 +63,15 @@ $this->need('header.php');
             <?php endwhile; ?>
         <?php else: ?>
             <div class="empty-state">
-                <span class="empty-index">00 / START</span>
-                <div><strong>第一篇记录还在路上</strong><span>慢慢写，慢慢积累。</span></div>
-                <a href="<?php $this->options->siteUrl('about.html'); ?>">先认识一下我 <span aria-hidden="true">→</span></a>
+                <?php if ($this->is('search')): ?>
+                    <span class="empty-index">00 / SEARCH</span>
+                    <div><strong>没有找到相关文章</strong><span>换个关键词再试试，或返回首页继续浏览。</span></div>
+                    <a href="<?php $this->options->siteUrl(); ?>">返回首页 <span aria-hidden="true">→</span></a>
+                <?php else: ?>
+                    <span class="empty-index">00 / START</span>
+                    <div><strong>第一篇记录还在路上</strong><span>慢慢写，慢慢积累。</span></div>
+                    <a href="<?php $this->options->siteUrl('about.html'); ?>">先认识一下我 <span aria-hidden="true">→</span></a>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     </section>

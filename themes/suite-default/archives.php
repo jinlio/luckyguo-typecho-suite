@@ -21,7 +21,7 @@ while ($archives->next()) {
     ];
 }
 ?>
-<main class="page-shell archives-page">
+<main id="main-content" class="page-shell archives-page">
     <header class="archive-heading"><p class="eyebrow">EVERYTHING, IN ORDER</p><h1><?php $this->title(); ?></h1></header>
     <?php if ($archiveGroups): ?>
     <div class="archive-timeline">

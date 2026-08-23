@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS traffic_daily LIKE traffic_hourly;
 
 INSERT INTO metrics_hourly (bucket, samples, cpu, l1, memp, swapp, rx, tx)
 SELECT DATE_FORMAT(ts, '%Y-%m-%d %H:00:00'), COUNT(*), MAX(cpu_pct), ROUND(AVG(load1), 2),
-       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))), ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used * 100.0 / swap_total ELSE 0 END)),
+       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))),
+       LEAST(100, GREATEST(0, ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used * 100.0 / swap_total ELSE 0 END)))),
        ROUND(AVG(net_rx_kbps)), ROUND(AVG(net_tx_kbps))
 FROM metrics
 GROUP BY DATE_FORMAT(ts, '%Y-%m-%d %H:00:00')
@@ -46,7 +47,8 @@ ON DUPLICATE KEY UPDATE
 
 INSERT INTO metrics_daily (bucket, samples, cpu, l1, memp, swapp, rx, tx)
 SELECT DATE(ts), COUNT(*), MAX(cpu_pct), ROUND(AVG(load1), 2),
-       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))), ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used * 100.0 / swap_total ELSE 0 END)),
+       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))),
+       LEAST(100, GREATEST(0, ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used * 100.0 / swap_total ELSE 0 END)))),
        ROUND(AVG(net_rx_kbps)), ROUND(AVG(net_tx_kbps))
 FROM metrics
 GROUP BY DATE(ts)

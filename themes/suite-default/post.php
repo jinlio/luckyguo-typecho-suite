@@ -7,8 +7,8 @@ $readingUnits = preg_match_all('/[\p{Han}]|[A-Za-z0-9]+/u', $readingText, $readi
 $readingSpeed = suite_int_option($this->options, 'readingSpeed', 480, 100, 1000);
 $readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / $readingSpeed));
 ?>
-<main class="article-shell">
-    <a class="back-link" href="<?php $this->options->siteUrl(); ?>">← 返回文章列表</a>
+<main id="main-content" class="article-shell">
+    <a class="back-link" data-context-back href="<?php $this->options->siteUrl(); ?>">← 返回文章列表</a>
     <article class="article" data-reading-progress="<?php echo suite_flag($this->options, 'showReadingProgress', true) ? 'on' : 'off'; ?>" itemscope itemtype="https://schema.org/BlogPosting">
         <header class="article-header">
             <div class="post-kicker"><?php $this->category(' / ', true, '未分类'); ?></div>

@@ -21,6 +21,8 @@ This repository contains no personal domain, author identity, production databas
 | `plugins/SuiteMonitor` | Authenticated read-only monitoring panel | No |
 | `deploy/create-suite-monitor.sql` | Optional monitor database schema | No |
 | `deploy/create-suite-stats.sql` | Optional anonymous statistics schema | No |
+| `deploy/install-monitor.sh` | Installs the monitor runtime and cron schedule | No |
+| `deploy/check-install.sh` | Read-only installation and runtime diagnosis | No |
 
 ## Screenshots
 
@@ -67,7 +69,7 @@ git clone https://github.com/jinlio/luckyguo-typecho-suite.git /tmp/typecho-suit
 rsync -a /tmp/typecho-suite/themes/suite-default/ "$TYPECHO\_ROOT/usr/themes/suite-default/"
 rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO\_ROOT/usr/plugins/Sitemap/"
 
-Select `suite-default` in Typecho Appearance and fill in its settings. To add avatar upload and avatar URL fields to Typecho's Profile page, apply `patches/typecho-1.3.0-personal-avatar.patch` to the matching Typecho 1.3.0 source tree first. Uploaded files are stored under `usr/uploads/avatars`; the URL is stored in the current user's personal options. Leaving both empty uses the Gravatar matching the email address. Comment avatars fall back to the theme's bundled default avatar when Gravatar cannot be loaded. Back up `config.inc.php`, the database, `usr/themes`, `usr/plugins`, and `usr/uploads` before upgrades.
+Select `suite-default` in Typecho Appearance and fill in its settings. To add avatar upload and avatar URL fields to Typecho's Profile page, apply `patches/typecho-1.3.0-personal-avatar.patch` to the matching Typecho 1.3.0 source tree first. Uploaded files are stored under `usr/uploads/avatars`; the URL is stored in the current user's personal options. Comment avatars use the bundled local default by default; enable `useGravatar` in the theme settings only when third-party avatar requests are acceptable. Back up `config.inc.php`, the database, `usr/themes`, `usr/plugins`, and `usr/uploads` before upgrades.
 
 ### Quick start
 
@@ -82,7 +84,7 @@ Select `suite-default` in Typecho Appearance and fill in its settings. To add av
    ```
 3. Enable `suite-default` under Appearance and fill in the theme settings.
 4. Enable only the plugins you need, then use their graphical settings pages. Sitemap controls content types; SuiteSearch controls Meilisearch, indexing, sync, and fallback; SuiteMonitor controls paths, credentials, services, probes, and retention.
-5. For monitoring, run `deploy/create-suite-monitor.sql` in a dedicated database and install `monitor-collect.sh`, `monitor-prune.sh`, and `suite-monitor-config.php` outside the web root. Adapt `deploy/monitor.cron` and enable cron.
+5. For monitoring, run `deploy/create-suite-monitor.sql` in a dedicated database, then run `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`. The installer places the collector outside the web root and installs the cron schedule. Use `deploy/check-install.sh` for a read-only diagnosis before or after installation.
 6. For search queues or full rebuilds, run `deploy/create-suite-search.sql` and install the supplied systemd timer. Ordinary MySQL search does not need the queue tables.
 7. Check the home page, an article, comments, mobile layout, `/sitemap.xml`, search, and the administrator-only monitor panel. Search failure does not block publishing, and monitor snapshots continue when the database is temporarily unavailable.
 
@@ -90,11 +92,11 @@ Select `suite-default` in Typecho Appearance and fill in its settings. To add av
 
 [](#theme-configuration)
 
-The settings page controls site name, author name and handle, tagline, biography, homepage eyebrow/signature/list labels, article author and TOC labels, avatar, homepage banner, article cover, homepage/code links, preset or custom accent color, cookie name/domain, default light/dark mode, page and reading widths, reading speed, uptime start time, statistics switch, homepage auxiliary modules, table-of-contents depth, reading metadata, reading progress, search entry, code enhancements, page motion, comment RSS, excerpt length, archive limit, and counter bucket count.
+The settings page controls site name, author name and handle, tagline, biography, homepage eyebrow/signature/list labels, article author and TOC labels, avatar, comment avatar source, homepage banner, article cover, homepage/code links, preset or custom accent color, cookie name/domain, default light/dark mode, page and reading widths, reading speed, uptime start time, statistics switch, homepage auxiliary modules, table-of-contents depth, reading metadata, reading progress, search entry, code enhancements, page motion, comment RSS, excerpt length, archive limit, and counter bucket count.
 
 On first activation, the theme imports the Typecho site title and description plus the first administrator's display name, username, homepage, personal bio, and saved avatar URL. Existing theme settings are never overwritten. All theme behavior switches are graphical settings; users do not need to edit theme files. Custom accent colors use the native color picker and take effect only when the custom-color switch is enabled; disabling it restores the preset palette.
 
-Leave the cookie domain empty for a host-only preference. Set it only when trusted subdomains need to share it. Image fields accept HTTP(S) URLs; a missing avatar shows a neutral theme mark, while a missing banner or article cover is omitted. Statistics are disabled by default and require `deploy/create-suite-stats.sql`.
+Leave the cookie domain empty for a host-only preference. Set it only when trusted subdomains need to share it. Image fields accept HTTP(S) URLs; a missing author avatar shows a neutral theme mark, while a missing banner or article cover is omitted. Comment avatars are local by default, so visitor email hashes are not sent to an external service unless `useGravatar` is enabled. Statistics are disabled by default and require `deploy/create-suite-stats.sql`.
 
 ## Optional plugins
 
@@ -131,7 +133,7 @@ Set `TYPECHO_SUITE_SEARCH_CONFIG` for another path. Without valid Meilisearch co
 
 [](#suitemonitor)
 
-Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Configure the status path, log path, database credentials, service units, site probes, retention periods, default range, refresh interval, and default theme in the SuiteMonitor settings page. Install `monitor-collect.sh`, `monitor-prune.sh`, and `suite-monitor-config.php` outside the web root, then adapt `deploy/monitor.cron` to the installed paths. The collector exports saved backend settings at runtime.
+Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Run `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh` to install the collector, pruner, exporter, and cron schedule. Configure the status path, log path, database credentials, service units, site probes, retention periods, default range, refresh interval, and default theme in the SuiteMonitor settings page. Use `deploy/check-install.sh` when a panel is empty or stale. The collector exports saved backend settings at runtime.
 
 The legacy `/etc/typecho-suite/monitor.env` remains a compatibility fallback during upgrades; new installations do not need to edit it, and the sample cron uses the backend exporter by default. Blank backend password fields preserve existing passwords; use the password-management clear option to remove them. Passwords are never written to the status snapshot.
 

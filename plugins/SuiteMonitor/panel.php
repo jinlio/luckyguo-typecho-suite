@@ -71,16 +71,6 @@ function mon_read_status(): array {
     return [$status, null];
 }
 
-// ajax 分支: 30s 局部刷新的数据源
-if (isset($_GET['ajax'])) {
-    header('Content-Type: application/json; charset=utf-8');
-    header('Cache-Control: no-store');
-    [$monSnapshot, $monStatusError] = mon_read_status();
-    if ($monStatusError !== null) { http_response_code(503); echo '{"error":"status unavailable"}'; exit; }
-    echo json_encode($monSnapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
-
 header('Cache-Control: no-store');
 
 function mon_e(?string $s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
@@ -139,6 +129,42 @@ function mon_nice_max(float $v): float {
     return 10 * $p;
 }
 
+/** Return sampling quality information without treating missing rows as zero. */
+function mon_chart_quality(array $rows): array {
+    $times = [];
+    foreach ($rows as $row) {
+        $time = strtotime((string)($row['b'] ?? ''));
+        if ($time !== false) $times[] = $time;
+    }
+    if (count($times) < 2) {
+        return [
+            'gaps' => 0,
+            'latest' => $times ? date('Y-m-d H:i', end($times)) : '-',
+            'gapAfter' => [],
+            'minTime' => $times[0] ?? 0,
+            'maxTime' => $times[0] ?? 0,
+        ];
+    }
+    $diffs = [];
+    foreach ($times as $index => $time) {
+        if ($index > 0 && $time > $times[$index - 1]) $diffs[] = $time - $times[$index - 1];
+    }
+    sort($diffs, SORT_NUMERIC);
+    $median = $diffs ? $diffs[(int) floor((count($diffs) - 1) / 2)] : 300;
+    $threshold = max(450, $median * 1.8);
+    $gapAfter = [];
+    foreach ($times as $index => $time) {
+        if ($index > 0 && ($time - $times[$index - 1]) > $threshold) $gapAfter[] = $index - 1;
+    }
+    return [
+        'gaps' => count($gapAfter),
+        'latest' => date('Y-m-d H:i', end($times)),
+        'gapAfter' => $gapAfter,
+        'minTime' => $times[0],
+        'maxTime' => end($times),
+    ];
+}
+
 /** 多序列折线/面积图，支持可选右侧纵轴. $rows: 按时间升序 */
 function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 720, int $h = 168, array $rightSeries = []): string {
     $n = count($rows);
@@ -148,16 +174,27 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
     $allSeries = array_merge($series, $rightSeries);
     $leftMax = 0.0; $rightMax = 0.0;
     foreach ($rows as $r) {
-        foreach ($series as $s) $leftMax = max($leftMax, (float)$r[$s['key']]);
-        foreach ($rightSeries as $s) $rightMax = max($rightMax, (float)$r[$s['key']]);
+        foreach ($series as $s) $leftMax = max($leftMax, (float)($r[$s['key']] ?? 0));
+        foreach ($rightSeries as $s) $rightMax = max($rightMax, (float)($r[$s['key']] ?? 0));
     }
     foreach ($series as $s) if (isset($s['axisMax'])) $leftMax = max($leftMax, (float)$s['axisMax']);
     foreach ($rightSeries as $s) if (isset($s['axisMax'])) $rightMax = max($rightMax, (float)$s['axisMax']);
     $leftMax = mon_nice_max($leftMax);
     $rightMax = $rightSeries ? mon_nice_max($rightMax) : $leftMax;
-    $x = fn(int $i): float => $padL + ($n <= 1 ? $iw / 2 : $iw * $i / ($n - 1));
+    $quality = mon_chart_quality($rows);
+    $timeSpan = max(1, (int)$quality['maxTime'] - (int)$quality['minTime']);
+    $x = fn(int $i): float => $n <= 1 || $quality['maxTime'] === $quality['minTime']
+        ? $padL + $iw / 2
+        : $padL + $iw * ((strtotime((string)($rows[$i]['b'] ?? '')) - (int)$quality['minTime']) / $timeSpan);
     $axisOf = fn(array $s): string => $rightSeries && (($s['axis'] ?? 'left') === 'right') ? 'right' : 'left';
     $y = fn(float $v, string $axis): float => $padT + $ih * (1 - min($v, $axis === 'right' ? $rightMax : $leftMax) / ($axis === 'right' ? $rightMax : $leftMax));
+    $segments = [];
+    $segmentStart = 0;
+    foreach ($quality['gapAfter'] as $gapAfter) {
+        $segments[] = [$segmentStart, $gapAfter];
+        $segmentStart = $gapAfter + 1;
+    }
+    $segments[] = [$segmentStart, $n - 1];
 
     $out = "<svg class=\"trend-chart\" viewBox=\"0 0 $w $h\" role=\"img\" aria-label=\"资源趋势图\">";
     foreach ([0, 0.5, 1] as $g) {
@@ -175,14 +212,23 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
     $tipParts = array_fill(0, $n, []);
     foreach ($allSeries as $s) {
         $axis = $axisOf($s);
-        $pts = [];
-        foreach ($rows as $i => $r) $pts[] = round($x($i), 1) . ',' . round($y((float)$r[$s['key']], $axis), 1);
-        if (!empty($s['area']) && $n > 1) {
-            $out .= "<polygon points=\"{$padL}," . ($padT + $ih) . " " . implode(' ', $pts) . " " . round($x($n - 1), 1) . "," . ($padT + $ih) . "\" fill=\"{$s['color']}\" opacity=\"0.10\"/>";
+        foreach ($segments as [$from, $to]) {
+            $pts = [];
+            for ($i = $from; $i <= $to; $i++) {
+                $pts[] = round($x($i), 1) . ',' . round($y((float)($rows[$i][$s['key']] ?? 0), $axis), 1);
+            }
+            if (!empty($s['area']) && count($pts) > 1) {
+                $out .= "<polygon points=\"" . round($x($from), 1) . "," . ($padT + $ih) . " " . implode(' ', $pts) . " " . round($x($to), 1) . "," . ($padT + $ih) . "\" fill=\"{$s['color']}\" opacity=\"0.10\"/>";
+            }
+            if (count($pts) > 1) {
+                $out .= "<polyline class=\"line\" points=\"" . implode(' ', $pts) . "\" stroke=\"{$s['color']}\"/>";
+            } else {
+                [$cx, $cy] = explode(',', $pts[0]);
+                $out .= "<circle class=\"point-marker\" cx=\"$cx\" cy=\"$cy\" r=\"2\" fill=\"{$s['color']}\"/>";
+            }
         }
-        $out .= "<polyline class=\"line\" points=\"" . implode(' ', $pts) . "\" stroke=\"{$s['color']}\"/>";
         foreach ($rows as $i => $r) {
-            $value = (float)$r[$s['key']];
+            $value = (float)($r[$s['key']] ?? 0);
             $precision = isset($s['precision']) ? (int)$s['precision'] : ($value < 10 ? 2 : 0);
             $unit = (string)($s['unit'] ?? '');
             $tipParts[$i][] = (string)$s['label'] . ' ' . mon_fnum($value, $precision) . $unit;
@@ -293,7 +339,7 @@ if ($rollup === null) {
         "SELECT FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(ts)/$bucket)*$bucket) AS b,
                 MAX(cpu_pct) cpu, ROUND(AVG(load1),2) l1,
                 ROUND(AVG(mem_used*100.0/GREATEST(mem_total,1))) memp,
-                ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used*100.0/swap_total ELSE 0 END)) swapp,
+                LEAST(100, GREATEST(0, ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used*100.0/swap_total ELSE 0 END)))) swapp,
                 ROUND(AVG(net_rx_kbps)) rx, ROUND(AVG(net_tx_kbps)) tx
          FROM metrics WHERE ts >= NOW() - INTERVAL $interval GROUP BY b ORDER BY b");
     $traffic = mon_db_all($pdo, 'raw traffic',
@@ -409,6 +455,35 @@ $stripRows = [];
 foreach ($sites24h as $r) $stripRows[$r['target']][strtotime((string)$r['b'])] = $r;
 $uptimeMap = array_column($uptime30, 'up', 'target');
 
+if (isset($_GET['ajax'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $charts = [
+        'cpu' => mon_line_chart($metrics, [
+            ['key' => 'cpu', 'label' => 'CPU', 'unit' => '%', 'precision' => 0, 'color' => 'var(--accent)', 'area' => true],
+        ], $labelFmt, 720, 168, [
+            ['key' => 'l1', 'label' => '负载 1min', 'precision' => 2, 'color' => 'var(--sage)', 'axis' => 'right'],
+        ]),
+        'memory' => mon_line_chart($metrics, [
+            ['key' => 'memp', 'label' => '内存 %', 'color' => 'var(--accent)', 'area' => true, 'axisMax' => 100],
+            ['key' => 'swapp', 'label' => 'Swap %', 'color' => 'var(--sage)', 'axisMax' => 100],
+        ], $labelFmt),
+        'network' => mon_line_chart($metrics, [
+            ['key' => 'rx', 'label' => '接收 KB/s', 'color' => 'var(--accent)', 'area' => true],
+            ['key' => 'tx', 'label' => '发送 KB/s', 'color' => 'var(--sage)'],
+        ], $labelFmt),
+        'traffic' => mon_bar_chart($traffic, 'req', 'err', $labelFmt, '请求量', '4xx+5xx'),
+    ];
+    if (MON_STATS_ENABLED) {
+        $charts['visitors'] = mon_bar_chart($uvDaily, 'uv', null, 'm-d', '访客');
+    }
+    echo json_encode([
+        'snapshot' => $S,
+        'charts' => $charts,
+        'quality' => mon_chart_quality($metrics),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 function mon_site_dot($code): string { return ($code >= 200 && $code < 400) ? 'ok' : 'bad'; }
 
 $monSelf = 'extending.php?panel=SuiteMonitor%2Fpanel.php';
@@ -417,6 +492,18 @@ $blogUrl = (string) $monitorOptions->siteUrl;
 $monitorPluginUrl = rtrim((string) $monitorOptions->pluginUrl('SuiteMonitor'), '/');
 $memoryLabel = (int)($S['mem_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['mem_total_mb']) . 'MB RAM' : 'RAM';
 $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_total_mb'] / 1024, 1) . 'GB 盘' : '磁盘';
+$metricsQuality = mon_chart_quality($metrics);
+$metricsQualityText = $metricsQuality['latest'] === '-'
+    ? '暂无采样数据'
+    : ('最后采集 ' . $metricsQuality['latest'] . ($metricsQuality['gaps'] > 0 ? ' · ' . $metricsQuality['gaps'] . ' 处数据缺口' : ''));
+$snapshotTime = isset($S['ts']) ? strtotime((string)$S['ts']) : false;
+$snapshotAge = $snapshotTime === false ? PHP_INT_MAX : max(0, time() - $snapshotTime);
+$monitorChecks = [
+    ['label' => '状态快照', 'ok' => $monStatusError === null, 'detail' => $monStatusError === null ? '文件可读' : $monStatusError],
+    ['label' => '监控数据库', 'ok' => $pdo instanceof PDO, 'detail' => $pdo instanceof PDO ? '连接正常' : '无法连接或凭据未配置'],
+    ['label' => '采集器新鲜度', 'ok' => $snapshotAge <= 180, 'detail' => $snapshotAge === PHP_INT_MAX ? '尚未生成快照' : ($snapshotAge . ' 秒前更新')],
+    ['label' => '资源采样', 'ok' => count($metrics) > 0, 'detail' => count($metrics) > 0 ? count($metrics) . ' 个数据点' : '暂无历史数据'],
+];
 ?><!doctype html>
 <html lang="zh-CN">
 <head>
@@ -441,6 +528,15 @@ $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_tota
 </header>
 
 <main>
+    <section class="config-check" aria-labelledby="config-check-title">
+        <header><div><p class="eyebrow">CHECK</p><h2 id="config-check-title">配置检查</h2></div><span class="hint">帮助定位空面板和数据延迟</span></header>
+        <div class="check-list">
+            <?php foreach ($monitorChecks as $check): ?>
+            <div class="check-item <?= $check['ok'] ? 'ok' : 'bad' ?>"><span class="check-dot" aria-hidden="true"></span><strong><?= mon_e($check['label']) ?></strong><small><?= mon_e($check['detail']) ?></small></div>
+            <?php endforeach; ?>
+        </div>
+    </section>
+
     <!-- 概览 -->
     <section>
         <header><div><p class="eyebrow">OVERVIEW</p><h2>服务器概览</h2></div><span class="hint<?= $monStatusError !== null ? ' status-warning' : '' ?>"><?= $monStatusError !== null ? mon_e($monStatusError) : mon_e($memoryLabel . ' · ' . $diskLabel . ' · 已运行 ' . $upStr) ?></span></header>
@@ -503,6 +599,7 @@ $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_tota
     <section>
         <header>
             <div><p class="eyebrow">TRENDS</p><h2>资源趋势</h2></div>
+            <span class="hint<?= $metricsQuality['gaps'] > 0 ? ' status-warning' : '' ?>" data-chart-quality><?= mon_e($metricsQualityText) ?></span>
             <nav class="range-nav">
                 <?php foreach ($RANGES as $rk => $rn): ?>
                 <a href="<?= $monSelf ?>&range=<?= mon_e($rk) ?>" class="<?= $rk === $range ? 'cur' : '' ?>"><?= mon_e($rn) ?></a>
@@ -510,7 +607,7 @@ $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_tota
             </nav>
         </header>
         <div class="grid-2">
-            <div class="panel chart">
+            <div class="panel chart" data-chart-key="cpu">
                 <?= mon_line_chart($metrics, [
                     ['key' => 'cpu', 'label' => 'CPU', 'unit' => '%', 'precision' => 0, 'color' => 'var(--accent)', 'area' => true],
                 ], $labelFmt, 720, 168, [
@@ -518,21 +615,21 @@ $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_tota
                 ]) ?>
                 <div class="legend"><span><i style="background:var(--accent)"></i>CPU %</span><span><i style="background:var(--sage)"></i>负载 1min</span></div>
             </div>
-            <div class="panel chart">
+            <div class="panel chart" data-chart-key="memory">
                 <?= mon_line_chart($metrics, [
                     ['key' => 'memp', 'label' => '内存 %', 'color' => 'var(--accent)', 'area' => true, 'axisMax' => 100],
                     ['key' => 'swapp', 'label' => 'Swap %', 'color' => 'var(--sage)', 'axisMax' => 100],
                 ], $labelFmt) ?>
                 <div class="legend"><span><i style="background:var(--accent)"></i>内存 %</span><span><i style="background:var(--sage)"></i>Swap %</span></div>
             </div>
-            <div class="panel chart">
+            <div class="panel chart" data-chart-key="network">
                 <?= mon_line_chart($metrics, [
                     ['key' => 'rx', 'label' => '接收 KB/s', 'color' => 'var(--accent)', 'area' => true],
                     ['key' => 'tx', 'label' => '发送 KB/s', 'color' => 'var(--sage)'],
                 ], $labelFmt) ?>
                 <div class="legend"><span><i style="background:var(--accent)"></i>接收 KB/s</span><span><i style="background:var(--sage)"></i>发送 KB/s</span></div>
             </div>
-            <div class="panel chart">
+            <div class="panel chart" data-chart-key="traffic">
                 <?= mon_bar_chart($traffic, 'req', 'err', $labelFmt, '请求量', '4xx+5xx') ?>
                 <div class="legend"><span><i style="background:var(--accent)"></i>请求量/<?= $range === '24h' ? '5 分钟' : ($range === '7d' ? '小时' : '天') ?></span><span><i style="background:var(--accent-strong)"></i>4xx+5xx</span></div>
             </div>
@@ -590,7 +687,7 @@ $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_tota
                 </div>
                 <?php endif; ?>
             </div>
-            <div class="panel chart">
+            <div class="panel chart" data-chart-key="visitors">
                 <?= mon_bar_chart($uvDaily, 'uv', null, 'm-d', '访客') ?>
                 <div class="legend"><span><i style="background:var(--accent)"></i>每日访客 · 近 30 天</span></div>
             </div>
@@ -619,13 +716,16 @@ $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_tota
   // 30s 局部刷新快照数据 (图表随页面刷新)
   var C=2*Math.PI*30;
   var setG=function(k,pct,v){pct=Math.max(0,Math.min(100,Math.round(pct)));var a=document.querySelector('[data-ga="'+k+'"]');if(a)a.style.strokeDashoffset=(C*(1-pct/100)).toFixed(1);var t=document.querySelector('[data-gv="'+k+'"]');if(t)t.textContent=pct+'%';var g=a&&a.closest('.gauge');if(g){g.classList.remove('warn','crit');if(pct>=85)g.classList.add('crit');else if(pct>=70)g.classList.add('warn');}var el=document.querySelector('[data-f="'+k+'_v"]');if(el&&v!==undefined)el.textContent=v;};
-  var poll=function(){fetch('<?= $monSelf ?>&ajax=1',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+  var poll=function(){fetch('<?= $monSelf ?>&ajax=1&range=<?= mon_e($range) ?>',{cache:'no-store'}).then(function(r){return r.json();}).then(function(payload){
+    var d=payload.snapshot||payload;
     var t=document.querySelector('[data-f="ts"]');if(t)t.textContent=d.ts;
     setG('cpu',d.cpu_pct,d.cpu_pct+'%');
     setG('mem',d.mem_total_mb?d.mem_used_mb*100/d.mem_total_mb:0,d.mem_used_mb.toLocaleString()+'M');
     setG('disk',d.disk_total_mb?d.disk_used_mb*100/d.disk_total_mb:0,(d.disk_used_mb/1024).toFixed(1)+'G');
     setG('load',d.load?d.load[0]/<?= MON_CORES ?>*100:0,d.load?d.load[0]:'-');
     var mr=document.querySelector('[data-f="min_req"]');if(mr&&d.traffic)mr.textContent=d.traffic.requests;
+    if(payload.charts)for(var chartKey in payload.charts){var panel=document.querySelector('[data-chart-key="'+chartKey+'"]');if(!panel)continue;var old=panel.querySelector('.trend-chart,.chart-empty');if(old)old.outerHTML=payload.charts[chartKey];}
+    if(payload.quality){var quality=document.querySelector('[data-chart-quality]');if(quality){quality.textContent=payload.quality.latest==='-'?'暂无采样数据':('最后采集 '+payload.quality.latest+(payload.quality.gaps>0?' · '+payload.quality.gaps+' 处数据缺口':''));quality.classList.toggle('status-warning',payload.quality.gaps>0);}}
     if(d.services)for(var k in d.services){var dot=document.querySelector('[data-svc="'+k+'"]');var st=document.querySelector('[data-svc-t="'+k+'"]');var ok=d.services[k]==='active';if(dot){dot.classList.remove('ok','bad');dot.classList.add(ok?'ok':'bad');}if(st)st.textContent=d.services[k];}
     if(d.sites)for(var s in d.sites){var c=d.sites[s].code,ok2=c>=200&&c<400;var cd=document.querySelector('[data-site-code="'+s+'"]');if(cd){cd.textContent=c||'—';cd.classList.remove('ok','bad');cd.classList.add(ok2?'ok':'bad');}var tt=document.querySelector('[data-site-ttfb="'+s+'"]');if(tt)tt.textContent=d.sites[s].ttfb_ms;var sd=document.querySelector('[data-site-dot="'+s+'"]');if(sd){sd.classList.remove('ok','bad');sd.classList.add(ok2?'ok':'bad');}}
   }).catch(function(){});};

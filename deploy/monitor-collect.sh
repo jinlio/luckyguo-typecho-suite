@@ -177,7 +177,8 @@ INSERT IGNORE INTO traffic_min (ts, requests, bytes_kb, s2xx, s3xx, s4xx, s5xx, 
 VALUES ('$TS', $REQ, $BYTES_KB, $S2, $S3, $S4, $S5, '$TOPJSON');
 INSERT INTO metrics_hourly (bucket, samples, cpu, l1, memp, swapp, rx, tx)
 SELECT DATE_FORMAT(ts, '%Y-%m-%d %H:00:00'), COUNT(*), MAX(cpu_pct), ROUND(AVG(load1), 2),
-       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))), ROUND(AVG(swap_used * 100.0 / GREATEST(swap_total, 1))),
+       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))),
+       LEAST(100, GREATEST(0, ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used * 100.0 / swap_total ELSE 0 END)))),
        ROUND(AVG(net_rx_kbps)), ROUND(AVG(net_tx_kbps))
 FROM metrics WHERE ts >= DATE_FORMAT('$TS', '%Y-%m-%d %H:00:00') AND ts <= '$TS'
 GROUP BY DATE_FORMAT(ts, '%Y-%m-%d %H:00:00')
@@ -185,7 +186,8 @@ ON DUPLICATE KEY UPDATE samples=VALUES(samples), cpu=VALUES(cpu), l1=VALUES(l1),
     swapp=VALUES(swapp), rx=VALUES(rx), tx=VALUES(tx);
 INSERT INTO metrics_daily (bucket, samples, cpu, l1, memp, swapp, rx, tx)
 SELECT DATE(ts), COUNT(*), MAX(cpu_pct), ROUND(AVG(load1), 2),
-       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))), ROUND(AVG(swap_used * 100.0 / GREATEST(swap_total, 1))),
+       ROUND(AVG(mem_used * 100.0 / GREATEST(mem_total, 1))),
+       LEAST(100, GREATEST(0, ROUND(AVG(CASE WHEN swap_total > 0 THEN swap_used * 100.0 / swap_total ELSE 0 END)))),
        ROUND(AVG(net_rx_kbps)), ROUND(AVG(net_tx_kbps))
 FROM metrics WHERE ts >= DATE('$TS') AND ts <= '$TS'
 GROUP BY DATE(ts)

@@ -182,6 +182,12 @@ function themeConfig($form)
         ['1'],
         _t('文章阅读信息')
     ))->multiMode());
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'useGravatar',
+        ['1' => _t('评论头像使用 Gravatar（会向第三方服务发起请求）')],
+        [],
+        _t('评论头像来源')
+    ))->multiMode());
 }
 
 function suite_option($options, string $name, string $fallback): string
@@ -361,6 +367,35 @@ function suite_avatar_markup($options, string $className = ''): string
     return '<span class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8')
         . '" aria-label="' . htmlspecialchars($author, ENT_QUOTES, 'UTF-8')
         . '" title="' . htmlspecialchars($author, ENT_QUOTES, 'UTF-8') . '">TS</span>';
+}
+
+/**
+ * Render comment avatars without making a third-party request by default.
+ * Typecho invokes this hook before its built-in Gravatar renderer.
+ */
+function suite_comments_gravatar(int $size = 32, ?string $rating = null, ?string $default = null, $comments = null): void
+{
+    $options = \Widget\Options::alloc();
+    $fallback = $default;
+    if (!is_string($fallback) || !preg_match('#^https?://#i', $fallback)) {
+        $fallback = rtrim((string) $options->themeUrl('assets/default-avatar.svg', $options->theme), '/');
+    }
+
+    if (suite_flag($options, 'useGravatar', false)) {
+        $mail = isset($comments->mail) ? (string) $comments->mail : '';
+        $url = \Typecho\Common::gravatarUrl($mail, $size, $rating, $fallback, true);
+        $fallbackAttr = ' data-avatar-fallback="' . htmlspecialchars($fallback, ENT_QUOTES, 'UTF-8') . '"';
+        $fallbackAttr .= ' onerror="this.onerror=null;this.src=' . htmlspecialchars(json_encode($fallback, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') . '"';
+    } else {
+        $url = $fallback;
+        $fallbackAttr = '';
+    }
+
+    $author = isset($comments->author) ? (string) $comments->author : '';
+    $src = suite_flag($options, 'useGravatar', false) ? $url : htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+    echo '<img class="avatar" loading="lazy" src="' . $src . '"'
+        . $fallbackAttr . ' alt="' . htmlspecialchars($author, ENT_QUOTES, 'UTF-8') . '" width="' . (int) $size
+        . '" height="' . (int) $size . '" />';
 }
 
 function suite_cookie_config($options): array
@@ -748,4 +783,8 @@ function suite_uptime_text($options = null): string
     $hours = intdiv($diff % 86400, 3600);
     $minutes = intdiv($diff % 3600, 60);
     return $days . ' 天 ' . $hours . ' 小时 ' . $minutes . ' 分';
+}
+
+if (class_exists('Typecho\\Plugin')) {
+    \Typecho\Plugin::factory('Widget_Abstract_Comments')->gravatar = 'suite_comments_gravatar';
 }

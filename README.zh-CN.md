@@ -21,6 +21,8 @@
 | `plugins/SuiteMonitor` | 需要管理员登录的只读监控面板 | 否 |
 | `deploy/create-suite-monitor.sql` | 可选监控数据库表结构 | 否 |
 | `deploy/create-suite-stats.sql` | 可选匿名统计表结构 | 否 |
+| `deploy/install-monitor.sh` | 安装监控运行文件和 cron 任务 | 否 |
+| `deploy/check-install.sh` | 只读检查安装和运行环境 | 否 |
 
 ## 截图展示
 
@@ -69,7 +71,7 @@ rsync -a /tmp/typecho-suite/themes/suite-default/ "$TYPECHO_ROOT/usr/themes/suit
 rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/"
 ```
 
-在 Typecho 后台的“外观”中启用 `suite-default`，然后填写主题配置。若希望在“个人设置”中上传头像或填写头像地址，请先按目标 Typecho 1.3.0 源码版本应用 `patches/typecho-1.3.0-personal-avatar.patch`；上传文件会保存到 `usr/uploads/avatars`，头像地址保存在当前用户的个人选项中，留空时继续使用邮箱对应的 Gravatar。评论头像抓取失败时会回退到主题内置默认头像。升级前先备份 `config.inc.php`、数据库、`usr/themes`、`usr/plugins` 和 `usr/uploads`。
+在 Typecho 后台的“外观”中启用 `suite-default`，然后填写主题配置。若希望在“个人设置”中上传头像或填写头像地址，请先按目标 Typecho 1.3.0 源码版本应用 `patches/typecho-1.3.0-personal-avatar.patch`；上传文件会保存到 `usr/uploads/avatars`，头像地址保存在当前用户的个人选项中。评论头像默认使用主题内置本地头像；只有在主题设置中启用 `useGravatar`，才会向第三方头像服务发起请求。升级前先备份 `config.inc.php`、数据库、`usr/themes`、`usr/plugins` 和 `usr/uploads`。
 
 ### 快速开始
 
@@ -84,7 +86,7 @@ rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/
    ```
 3. 登录 Typecho 后台，在“外观”中启用 `suite-default`，打开主题设置页填写站点名称、简介、图片、链接和统计开关。
 4. 在“插件”中只启用需要的组件。每个插件启用后都进入“设置”页：Sitemap 选择内容类型；SuiteSearch 填写 Meilisearch 和索引选项；SuiteMonitor 填写状态路径、数据库账号、服务和探测目标。
-5. 需要监控时，在独立数据库执行 `deploy/create-suite-monitor.sql`，并把 `deploy/monitor-collect.sh`、`deploy/monitor-prune.sh`、`deploy/suite-monitor-config.php` 安装到 Web 根目录之外；复制并调整 `deploy/monitor.cron` 后再启用 cron。
+5. 需要监控时，在独立数据库执行 `deploy/create-suite-monitor.sql`，然后运行 `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`。脚本会把采集器、清理器和配置导出器安装到 Web 根目录之外，并安装 cron；遇到空面板或数据不更新时运行 `deploy/check-install.sh` 做只读诊断。
 6. 需要搜索队列或完整重建时，再执行 `deploy/create-suite-search.sql` 并安装 systemd timer；只做普通搜索时不需要创建队列表。
 7. 保存设置后依次打开首页、文章、评论、移动端、`/sitemap.xml`、搜索页和管理员监控面板。搜索服务不可用不会阻断发布，监控数据库暂时不可用仍会写入资源快照。
 
@@ -92,11 +94,11 @@ rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/
 
 [](#theme-configuration)
 
-主题配置页可设置站点名称、作者信息、副标题、简介、关于页引导语/方向/技术栈/状态、首页眉题/签名/列表标题、文章作者和目录标签、头像、首页横幅、文章封面、站点与代码仓库链接、预设或自定义主题色、主题 Cookie、默认浅深色模式、页面和正文宽度、预计阅读速度、站点起始时间、访问统计、首页附加模块、文章目录层级、文章阅读信息、阅读进度、顶部搜索、代码增强、页面动画、评论 RSS、首页摘要长度和归档数量。
+主题配置页可设置站点名称、作者信息、副标题、简介、关于页引导语/方向/技术栈/状态、首页眉题/签名/列表标题、文章作者和目录标签、头像、评论头像来源、首页横幅、文章封面、站点与代码仓库链接、预设或自定义主题色、主题 Cookie、默认浅深色模式、页面和正文宽度、预计阅读速度、站点起始时间、访问统计、首页附加模块、文章目录层级、文章阅读信息、阅读进度、顶部搜索、代码增强、页面动画、评论 RSS、首页摘要长度和归档数量。
 
 首次启用主题时，会自动从 Typecho 基本设置和首个管理员资料导入站点标题、站点描述、昵称、用户名、个人主页、个人简介和已保存的头像地址；已有主题配置不会被覆盖。所有主题行为开关都在后台配置页提供图形化选项，不需要修改主题文件。自定义主题色使用后台原生颜色选择器，勾选开关后生效，关闭即可恢复预设色。
 
-Cookie 域名留空时只在当前主机生效；只有在明确需要多个可信子域共享主题状态时才填写父域。图片字段支持 HTTP(S) 地址；头像留空显示中性主题标识，横幅和文章封面留空时不显示。统计默认关闭；启用时执行 `deploy/create-suite-stats.sql`，并根据实际表前缀替换 `typecho_`。
+Cookie 域名留空时只在当前主机生效；只有在明确需要多个可信子域共享主题状态时才填写父域。图片字段支持 HTTP(S) 地址；作者头像留空显示中性主题标识，评论头像默认使用本地默认头像，启用 `useGravatar` 后才会请求第三方服务。横幅和文章封面留空时不显示。统计默认关闭；启用时执行 `deploy/create-suite-stats.sql`，并根据实际表前缀替换 `typecho_`。
 
 ## 插件配置
 
@@ -135,7 +137,7 @@ MEILI_INDEX_LIVE=posts_live
 
 [](#suitemonitor)
 
-先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期，并选择面板默认时间范围、自动刷新频率和默认主题。将 `monitor-collect.sh`、`monitor-prune.sh`、`suite-monitor-config.php` 安装在 Web 根目录之外，再按实际安装路径调整 `deploy/monitor.cron`；采集器会优先读取后台设置。
+先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`，再运行 `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期，并选择面板默认时间范围、自动刷新频率和默认主题。采集器会优先读取后台设置；遇到安装或运行问题时使用 `deploy/check-install.sh`。
 
 旧版 `/etc/typecho-suite/monitor.env` 仍可作为升级期间的兼容回退，新安装无需手工编辑；示例 cron 已默认只使用后台设置导出器。后台密码框留空表示保留已有密码，勾选密码管理中的清除选项才会移除；密码不会写入状态快照或日志。
 

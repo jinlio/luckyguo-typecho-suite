@@ -28,13 +28,14 @@ if ($archiveDescription === '') {
     <?php $this->header(); ?>
 </head>
 <body class="<?php echo suite_accent_class($this->options) . (suite_custom_accent($this->options) !== '' ? ' suite-custom-accent' : '') . (!suite_flag($this->options, 'enableMotion', true) ? ' suite-no-motion' : ''); ?>">
+<a class="skip-link" href="#main-content">跳到主要内容</a>
 <header class="site-header">
     <div class="header-inner">
         <a class="site-brand" href="<?php $this->options->siteUrl(); ?>">
             <?php echo suite_avatar_markup($this->options); ?>
             <span><strong><?php echo htmlspecialchars(suite_option($this->options, 'siteName', (string) $this->options->title), ENT_QUOTES, 'UTF-8'); ?></strong><small><?php echo htmlspecialchars(suite_option($this->options, 'authorHandle', 'journal'), ENT_QUOTES, 'UTF-8'); ?></small></span>
         </a>
-        <nav class="site-nav" aria-label="主导航">
+        <nav id="site-nav" class="site-nav" aria-label="主导航">
             <a<?php if ($this->is('index')): ?> class="current"<?php endif; ?> href="<?php $this->options->siteUrl(); ?>">首页</a>
             <?php \Widget\Contents\Page\Rows::alloc()->to($navPages); ?>
             <?php while ($navPages->next()): ?>
@@ -42,9 +43,12 @@ if ($archiveDescription === '') {
             <?php endwhile; ?>
         </nav>
         <div class="header-tools">
+            <button class="icon-button nav-toggle" type="button" aria-label="打开导航菜单" aria-expanded="false" aria-controls="site-nav">
+                <span class="menu-glyph" aria-hidden="true"></span>
+            </button>
             <?php if (suite_flag($this->options, 'showSearch', true)): ?>
                 <button class="search-toggle" type="button" aria-label="打开搜索" aria-expanded="false" aria-controls="site-search-bar">
-                    <span class="search-glyph" aria-hidden="true"></span><b>搜索</b><kbd aria-hidden="true">⌘K</kbd>
+                    <span class="search-glyph" aria-hidden="true"></span><b>搜索</b><kbd data-search-shortcut aria-hidden="true">⌘K</kbd>
                 </button>
             <?php endif; ?>
             <button class="icon-button theme-toggle" type="button" aria-label="切换深浅色主题" title="切换主题">◐</button>
