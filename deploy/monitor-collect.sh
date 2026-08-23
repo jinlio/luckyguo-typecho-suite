@@ -1,6 +1,7 @@
 #!/bin/bash
 # monitor-collect.sh — 每分钟由 cron/systemd 以 root 执行
-# Configuration is kept outside the repository. See examples/monitor.env.example.
+# New installations use SuiteMonitor backend settings exported by PHP.
+# The external env file remains a legacy upgrade fallback.
 set -euo pipefail
 
 CONFIG_FILE="${TYPECHO_SUITE_MONITOR_CONFIG:-/etc/typecho-suite/monitor.env}"

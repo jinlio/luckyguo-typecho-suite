@@ -1,5 +1,6 @@
 #!/bin/bash
-# Prune monitor history. Keep configuration outside the repository.
+# Prune monitor history. New installations use SuiteMonitor backend settings;
+# the external env file remains a legacy upgrade fallback.
 set -euo pipefail
 
 CONFIG_FILE="${TYPECHO_SUITE_MONITOR_CONFIG:-/etc/typecho-suite/monitor.env}"

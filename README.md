@@ -118,14 +118,14 @@ Enable `Sitemap`, choose content types, and validate with `curl -fsS https://blo
 
 Install `deploy/create-suite-search.sql`, enable SuiteSearch, and fill in the Meilisearch URL, API keys, index names, automatic sync, and LIKE fallback switches in the plugin settings page. A blank password field keeps the existing key; enter a new value only when rotating credentials, or use the clear-keys checkbox to remove saved keys. Leave the URL empty or disable Meilisearch to use MySQL search only.
 
-The legacy environment file remains supported as a fallback when backend settings have never been saved:
+New installations do not need a search `.env` file. The legacy environment file remains supported as a fallback when backend settings have never been saved:
 
 MEILI\_URL\=http://127.0.0.1:7700
 SEARCH\_KEY\=replace-with-search-only-key
 WRITE\_KEY\=
 MEILI\_INDEX\_LIVE\=posts\_live
 
-Set `TYPECHO_SUITE_SEARCH_CONFIG` for another path. Without valid Meilisearch configuration, the plugin falls back to parameterized MySQL `LIKE` search. Full rebuilds use `deploy/suite-search-rebuild.php` and the supplied systemd files; never delete the live index or queue during recovery.
+Set `TYPECHO_SUITE_SEARCH_CONFIG` for another path. Without valid Meilisearch configuration, the plugin falls back to parameterized MySQL `LIKE` search. Full rebuilds use `deploy/suite-search-rebuild.php` and the supplied systemd files, which prefer backend settings; never delete the live index or queue during recovery.
 
 ### SuiteMonitor
 
@@ -133,7 +133,7 @@ Set `TYPECHO_SUITE_SEARCH_CONFIG` for another path. Without valid Meilisearch co
 
 Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Configure the status path, log path, database credentials, service units, site probes, retention periods, default range, refresh interval, and default theme in the SuiteMonitor settings page. Install `monitor-collect.sh`, `monitor-prune.sh`, and `suite-monitor-config.php` outside the web root, then adapt `deploy/monitor.cron` to the installed paths. The collector exports saved backend settings at runtime.
 
-The legacy `/etc/typecho-suite/monitor.env` remains a compatibility fallback during upgrades; new installations do not need to edit it. Blank backend password fields preserve existing passwords; use the password-management clear option to remove them. Passwords are never written to the status snapshot.
+The legacy `/etc/typecho-suite/monitor.env` remains a compatibility fallback during upgrades; new installations do not need to edit it, and the sample cron uses the backend exporter by default. Blank backend password fields preserve existing passwords; use the password-management clear option to remove them. Passwords are never written to the status snapshot.
 
 `SITE_TARGETS` accepts space-separated `key=host:port` entries, such as `blog=blog.example.com:80 docs=docs.example.com:80`. Enter display labels, public URLs, and service labels as one `key=value` per line; JSON saved by older versions remains supported. The panel is administrator-only; monitored services, hosts, paths, retention values, cookie settings, database DSN, table prefix, and CPU core count are all editable in the backend.
 

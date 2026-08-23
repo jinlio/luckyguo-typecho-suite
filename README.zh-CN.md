@@ -120,7 +120,7 @@ Cookie 域名留空时只在当前主机生效；只有在明确需要多个可�
 
 按需执行 `deploy/create-suite-search.sql`。启用插件后，直接在后台设置页填写 Meilisearch 地址、各类 API Key、索引名称、自动同步和 LIKE 降级开关。留空地址或关闭 Meilisearch 即可只使用 MySQL 搜索。密码框留空表示保留已有密钥，只有输入新值才会替换；需要移除密钥时勾选“清除已保存的 API Key”。
 
-旧版本仍支持站点根目录之外的 `/etc/typecho-suite/search.env` 和 `TYPECHO_SUITE_SEARCH_CONFIG`，仅作为后台设置不存在时的兼容回退：
+新安装无需创建或修改搜索 `.env` 文件。旧版本仍支持站点根目录之外的 `/etc/typecho-suite/search.env` 和 `TYPECHO_SUITE_SEARCH_CONFIG`，仅作为后台设置不存在时的兼容回退：
 
 ```ini
 MEILI_URL=http://127.0.0.1:7700
@@ -129,7 +129,7 @@ WRITE_KEY=
 MEILI_INDEX_LIVE=posts_live
 ```
 
-使用 `TYPECHO_SUITE_SEARCH_CONFIG` 可指定其他路径。Meilisearch 配置缺失或不可用时，插件自动降级到参数化 MySQL `LIKE` 查询。完整重建使用 `deploy/suite-search-rebuild.php` 和配套 systemd 文件，恢复时不要直接删除线上索引或队列。
+使用 `TYPECHO_SUITE_SEARCH_CONFIG` 可指定其他路径。Meilisearch 配置缺失或不可用时，插件自动降级到参数化 MySQL `LIKE` 查询。完整重建使用 `deploy/suite-search-rebuild.php` 和配套 systemd 文件，脚本会优先读取后台设置；恢复时不要直接删除线上索引或队列。
 
 ### SuiteMonitor
 
@@ -137,7 +137,7 @@ MEILI_INDEX_LIVE=posts_live
 
 先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期，并选择面板默认时间范围、自动刷新频率和默认主题。将 `monitor-collect.sh`、`monitor-prune.sh`、`suite-monitor-config.php` 安装在 Web 根目录之外，再按实际安装路径调整 `deploy/monitor.cron`；采集器会优先读取后台设置。
 
-旧版 `/etc/typecho-suite/monitor.env` 仍可作为升级期间的兼容回退，新安装无需手工编辑。后台密码框留空表示保留已有密码，勾选密码管理中的清除选项才会移除；密码不会写入状态快照或日志。
+旧版 `/etc/typecho-suite/monitor.env` 仍可作为升级期间的兼容回退，新安装无需手工编辑；示例 cron 已默认只使用后台设置导出器。后台密码框留空表示保留已有密码，勾选密码管理中的清除选项才会移除；密码不会写入状态快照或日志。
 
 `SITE_TARGETS` 使用空格分隔的 `key=host:port`，例如 `blog=blog.example.com:80 docs=docs.example.com:80`。显示名称、公开链接和服务名称使用“一行一个 `key=值`”填写，不需要编写 JSON；旧版本保存的 JSON 仍可继续读取。服务、主机、路径、保留天数、Cookie、监控 DSN、表前缀和 CPU 核数均可在后台修改；监控面板仅允许管理员访问。
 
