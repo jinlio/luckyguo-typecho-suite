@@ -225,7 +225,7 @@ section .hint { color: var(--ink-soft); font-size: 12px; }
 .chart .grid { stroke: var(--line); stroke-dasharray: 3 4; }
 .chart .axis { fill: var(--ink-soft); font-size: 10px; }
 .chart .axis-right { fill: var(--sage); }
-.chart .line { fill: none; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1200; stroke-dashoffset: 1200; animation: chart-draw 1.1s cubic-bezier(.22, 1, .36, 1) forwards; }
+.chart .line { fill: none; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: chart-draw 1.1s cubic-bezier(.22, 1, .36, 1) forwards; }
 .chart .bar-fill { transform-box: fill-box; transform-origin: center bottom; animation: bar-grow .62s cubic-bezier(.22, 1, .36, 1) both; }
 .chart .bar-error { animation-name: bar-grow-error; }
 .chart .point { opacity: 0; pointer-events: all; cursor: crosshair; }

@@ -24,8 +24,8 @@ $this->need('header.php');
     <section class="about-story" aria-labelledby="about-story-title">
         <header class="about-story-heading">
             <p class="eyebrow">PROFILE / 01</p>
-            <h2 id="about-story-title">一些关于我的事</h2>
-            <span>学习、实践，也记录过程。</span>
+            <h2 id="about-story-title"><?php echo htmlspecialchars(suite_option($this->options, 'aboutStoryTitle', '一些关于我的事'), ENT_QUOTES, 'UTF-8'); ?></h2>
+            <span><?php echo htmlspecialchars(suite_option($this->options, 'aboutStorySubtitle', '学习、实践，也记录过程。'), ENT_QUOTES, 'UTF-8'); ?></span>
         </header>
         <div class="about-copy"><?php $aboutBody = trim((string) suite_option($this->options, 'aboutBody', '')); if ($aboutBody !== ''): echo nl2br(htmlspecialchars($aboutBody, ENT_QUOTES, 'UTF-8')); else: $this->content(); endif; ?></div>
     </section>

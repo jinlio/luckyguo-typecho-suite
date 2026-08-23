@@ -226,7 +226,7 @@ function mon_line_chart(array $rows, array $series, string $labelFmt, int $w = 7
                 $out .= "<polygon points=\"" . round($x($from), 1) . "," . ($padT + $ih) . " " . implode(' ', $pts) . " " . round($x($to), 1) . "," . ($padT + $ih) . "\" fill=\"{$s['color']}\" opacity=\"0.10\"/>";
             }
             if (count($pts) > 1) {
-                $out .= "<polyline class=\"line\" points=\"" . implode(' ', $pts) . "\" stroke=\"{$s['color']}\"/>";
+                $out .= "<polyline class=\"line\" pathLength=\"1\" points=\"" . implode(' ', $pts) . "\" stroke=\"{$s['color']}\"/>";
             } else {
                 [$cx, $cy] = explode(',', $pts[0]);
                 $out .= "<circle class=\"point-marker\" cx=\"$cx\" cy=\"$cy\" r=\"2\" fill=\"{$s['color']}\"/>";
