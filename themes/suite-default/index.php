@@ -4,7 +4,7 @@
  *
  * @package Suite Default Journal
  * @author suite
- * @version 1.6.1
+ * @version 1.7.0
  * @link https://github.com/jinlio/luckyguo-typecho-suite
  */
 

@@ -16,7 +16,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  *
  * @package SuiteMonitor
  * @author suite
- * @version 1.2.0
+ * @version 1.3.0
  * @link https://github.com/jinlio/luckyguo-typecho-suite
  */
 class Plugin implements PluginInterface

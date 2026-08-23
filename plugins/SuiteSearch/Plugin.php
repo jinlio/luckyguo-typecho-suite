@@ -13,7 +13,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  *
  * @package SuiteSearch
  * @author suite
- * @version 1.0.0
+ * @version 1.1.0
  * @link https://github.com/jinlio/luckyguo-typecho-suite
  */
 final class Plugin implements PluginInterface
