@@ -69,7 +69,7 @@ rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO\_ROOT/usr/plugins/Sitemap
 
 Select `suite-default` in Typecho Appearance and fill in its settings. To add avatar upload and avatar URL fields to Typecho's Profile page, apply `patches/typecho-1.3.0-personal-avatar.patch` to the matching Typecho 1.3.0 source tree first. Uploaded files are stored under `usr/uploads/avatars`; the URL is stored in the current user's personal options. Leaving both empty uses the Gravatar matching the email address. Comment avatars fall back to the theme's bundled default avatar when Gravatar cannot be loaded. Back up `config.inc.php`, the database, `usr/themes`, `usr/plugins`, and `usr/uploads` before upgrades.
 
-### Quick start for non-technical users
+### Quick start
 
 1. Install Typecho 1.3.0, PHP 7.4+, and MySQL 8.0+, then finish the normal Typecho setup. Back up `config.inc.php`, the database, and `usr/` first.
 2. Copy the reusable files (replace the root path as needed):
