@@ -137,7 +137,7 @@ MEILI_INDEX_LIVE=posts_live
 
 [](#suitemonitor)
 
-先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`，再运行 `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期，并选择面板默认时间范围、自动刷新频率和默认主题。采集器会优先读取后台设置；遇到安装或运行问题时使用 `deploy/check-install.sh`。
+先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`，再运行 `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期，并选择面板默认时间范围、自动刷新频率、默认主题，还可以设置监控面板自己的站点名称、标识和头像地址。品牌字段留空时自动继承当前主题的站点名称、作者标识和头像。采集器会优先读取后台设置；遇到安装或运行问题时使用 `deploy/check-install.sh`。
 
 旧版 `/etc/typecho-suite/monitor.env` 仍可作为升级期间的兼容回退，新安装无需手工编辑；示例 cron 已默认只使用后台设置导出器。后台密码框留空表示保留已有密码，勾选密码管理中的清除选项才会移除；密码不会写入状态快照或日志。
 

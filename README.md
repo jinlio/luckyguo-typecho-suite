@@ -133,7 +133,7 @@ Set `TYPECHO_SUITE_SEARCH_CONFIG` for another path. Without valid Meilisearch co
 
 [](#suitemonitor)
 
-Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Run `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh` to install the collector, pruner, exporter, and cron schedule. Configure the status path, log path, database credentials, service units, site probes, retention periods, default range, refresh interval, and default theme in the SuiteMonitor settings page. Use `deploy/check-install.sh` when a panel is empty or stale. The collector exports saved backend settings at runtime.
+Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Run `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh` to install the collector, pruner, exporter, and cron schedule. Configure the status path, log path, database credentials, service units, site probes, retention periods, default range, refresh interval, default theme, and optional monitor brand name/handle/avatar URL in the SuiteMonitor settings page. Empty brand fields inherit the active theme's site name, author handle, and avatar. Use `deploy/check-install.sh` when a panel is empty or stale. The collector exports saved backend settings at runtime.
 
 The legacy `/etc/typecho-suite/monitor.env` remains a compatibility fallback during upgrades; new installations do not need to edit it, and the sample cron uses the backend exporter by default. Blank backend password fields preserve existing passwords; use the password-management clear option to remove them. Passwords are never written to the status snapshot.
 
