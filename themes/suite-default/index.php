@@ -52,7 +52,7 @@ $this->need('header.php');
                 <div class="post-main">
                     <div class="post-kicker"><?php if ($postMeta['categories']): ?><?php foreach ($postMeta['categories'] as $categoryIndex => $category): ?><?php echo $categoryIndex ? ' / ' : ''; ?><a href="<?php echo htmlspecialchars($category['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8'); ?></a><?php endforeach; ?><?php else: ?>未分类<?php endif; ?></div>
                     <h2><a href="<?php $this->permalink(); ?>"><?php $this->title(); ?></a></h2>
-                    <div class="post-summary"><?php echo htmlspecialchars(suite_list_excerpt((string) $this->text), ENT_QUOTES, 'UTF-8'); ?></div>
+                    <div class="post-summary"><?php echo htmlspecialchars(suite_list_excerpt((string) $this->text, suite_int_option($this->options, 'homeExcerptLength', 150, 40, 400)), ENT_QUOTES, 'UTF-8'); ?></div>
                     <div class="post-meta">
                         <span><?php $this->commentsNum('暂无评论', '1 条评论', '%d 条评论'); ?></span>
                         <span>阅读 <?php echo $postViews[(int) $this->cid] ?? 0; ?></span>
@@ -74,9 +74,9 @@ $this->need('header.php');
     <?php if ($this->is('index')): ?>
         <?php \Widget\Metas\Category\Rows::alloc()->to($categories); ?>
         <?php \Widget\Contents\Post\Date::alloc('type=month&format=Y 年 m 月&limit=6')->to($months); ?>
-        <?php \Widget\Comments\Recent::alloc('pageSize=5')->to($recentComments); ?>
-        <?php $showHomeWidgets = $this->options->showHomeWidgets ?? ['1']; ?>
-        <?php if (is_array($showHomeWidgets) ? in_array('1', $showHomeWidgets, true) : (string) $showHomeWidgets === '1'): ?>
+        <?php $recentCommentsCount = suite_int_option($this->options, 'recentCommentsCount', 5, 1, 20); ?>
+        <?php \Widget\Comments\Recent::alloc('pageSize=' . $recentCommentsCount)->to($recentComments); ?>
+        <?php if (suite_flag($this->options, 'showHomeWidgets', true)): ?>
         <section class="typecho-widgets" aria-label="站点浏览">
             <section class="native-widget">
                 <div class="native-widget-heading"><strong>分类</strong><span>CATEGORIES</span></div>

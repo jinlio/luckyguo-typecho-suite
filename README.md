@@ -90,7 +90,9 @@ Select `suite-default` in Typecho Appearance and fill in its settings. To add av
 
 [](#theme-configuration)
 
-The settings page controls site name, author name and handle, tagline, biography, avatar, homepage banner, article cover, homepage/code links, accent color, cookie name/domain, uptime start time, statistics switch, homepage auxiliary modules, article table of contents, comment RSS, and counter bucket count.
+The settings page controls site name, author name and handle, tagline, biography, avatar, homepage banner, article cover, homepage/code links, preset or custom accent color, cookie name/domain, default light/dark mode, uptime start time, statistics switch, homepage auxiliary modules, article table of contents, reading metadata, comment RSS, excerpt length, archive limit, and counter bucket count.
+
+On first activation, the theme imports the Typecho site title and description plus the first administrator's display name, username, homepage, personal bio, and saved avatar URL. Existing theme settings are never overwritten. Custom accent colors use the native color picker and take effect only when the custom-color switch is enabled; disabling it restores the preset palette.
 
 Leave the cookie domain empty for a host-only preference. Set it only when trusted subdomains need to share it. Image fields accept HTTP(S) URLs; a missing avatar shows a neutral theme mark, while a missing banner or article cover is omitted. Statistics are disabled by default and require `deploy/create-suite-stats.sql`.
 

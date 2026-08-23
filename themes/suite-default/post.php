@@ -14,9 +14,11 @@ $readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / 480));
             <h1 itemprop="headline"><?php $this->title(); ?></h1>
             <div class="article-meta">
                 <time datetime="<?php $this->date('c'); ?>" itemprop="datePublished"><?php $this->date('Y 年 m 月 d 日'); ?></time>
-                <span><?php $this->commentsNum('暂无评论', '1 条评论', '%d 条评论'); ?></span>
-                <span>阅读 <?php echo suite_get_views((int) $this->cid); ?></span>
-                <span class="article-reading-time">约 <?php echo $readingMinutes; ?> 分钟阅读</span>
+                <?php if (suite_flag($this->options, 'showReadingMeta', true)): ?>
+                    <span><?php $this->commentsNum('暂无评论', '1 条评论', '%d 条评论'); ?></span>
+                    <span>阅读 <?php echo suite_get_views((int) $this->cid); ?></span>
+                    <span class="article-reading-time">约 <?php echo $readingMinutes; ?> 分钟阅读</span>
+                <?php endif; ?>
             </div>
         </header>
         <?php $coverUrl = suite_asset($this->options, 'articleCoverUrl'); ?>
@@ -28,8 +30,7 @@ $readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / 480));
                 <?php echo suite_avatar_markup($this->options); ?>
                 <strong><?php echo htmlspecialchars(suite_option($this->options, 'authorName', '站点作者'), ENT_QUOTES, 'UTF-8'); ?></strong>
                 <span><?php echo htmlspecialchars(suite_option($this->options, 'authorHandle', 'author'), ENT_QUOTES, 'UTF-8'); ?></span>
-                <?php $showArticleToc = $this->options->showArticleToc ?? ['1']; ?>
-                <?php if (is_array($showArticleToc) ? in_array('1', $showArticleToc, true) : (string) $showArticleToc === '1'): ?>
+                <?php if (suite_flag($this->options, 'showArticleToc', true)): ?>
                 <nav class="article-toc" aria-label="文章目录">
                     <p>ON THIS PAGE</p>
                     <ol></ol>

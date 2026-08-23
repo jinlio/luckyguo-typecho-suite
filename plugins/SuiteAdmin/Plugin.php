@@ -39,8 +39,10 @@ class Plugin implements PluginInterface
         $cookieName = preg_match('/^[A-Za-z][A-Za-z0-9_-]{0,63}$/', $cookieName) ? $cookieName : 'suite-theme';
         $cookieDomain = trim((string) ($settings->cookieDomain ?? ''));
         $cookieDomain = preg_match('/^\.?[A-Za-z0-9.-]+$/', $cookieDomain) ? $cookieDomain : '';
+        $defaultTheme = trim((string) ($settings->defaultTheme ?? 'system'));
+        $defaultTheme = in_array($defaultTheme, ['system', 'light', 'dark'], true) ? $defaultTheme : 'system';
         $base = rtrim((string) $options->pluginUrl('SuiteAdmin'), '/') . '/';
-        $config = json_encode(['name' => $cookieName, 'domain' => $cookieDomain], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $config = json_encode(['name' => $cookieName, 'domain' => $cookieDomain, 'defaultTheme' => $defaultTheme], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         return $header
             . "\n" . '<script>window.SuiteAdminThemeConfig=' . $config . ';(function(){var c=window.SuiteAdminThemeConfig,m=document.cookie.match(new RegExp("(?:^|;\\\\s*)"+c.name+"=(dark|light)(?:;|$)")),t=m?m[1]:localStorage.getItem(c.name)||((matchMedia("(prefers-color-scheme:dark)").matches)?"dark":"light");document.documentElement.dataset.theme=t;})();</script>'
             . "\n" . '<link rel="stylesheet" href="' . $base . 'admin.css?v=1.3.9">'
@@ -54,6 +56,12 @@ class Plugin implements PluginInterface
         ))->addRule('required', _t('请填写 Cookie 名称')));
         $form->addInput(new Form\Element\Text(
             'cookieDomain', null, '留空表示仅当前主机', _t('主题偏好 Cookie 域名')
+        ));
+        $form->addInput(new Form\Element\Select(
+            'defaultTheme',
+            ['system' => _t('跟随系统'), 'light' => _t('默认浅色'), 'dark' => _t('默认深色')],
+            'system',
+            _t('后台默认主题模式')
         ));
     }
 

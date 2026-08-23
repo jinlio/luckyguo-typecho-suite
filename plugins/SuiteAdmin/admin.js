@@ -12,7 +12,8 @@
             var ls = localStorage.getItem(COOKIE);
             if (ls === 'dark' || ls === 'light') { return ls; }
         } catch (e) {}
-        return (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        var system = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        return config.defaultTheme === 'dark' || config.defaultTheme === 'light' ? config.defaultTheme : system;
     }
 
     function setTheme(t, animate) {

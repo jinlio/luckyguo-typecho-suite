@@ -6,7 +6,8 @@
  */
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 $this->need('header.php');
-\Widget\Contents\Post\Recent::alloc('pageSize=1000')->to($archives);
+$archiveLimit = suite_int_option($this->options, 'archiveLimit', 1000, 100, 10000);
+\Widget\Contents\Post\Recent::alloc('pageSize=' . $archiveLimit)->to($archives);
 $archiveGroups = [];
 while ($archives->next()) {
     $created = (int) $archives->created;

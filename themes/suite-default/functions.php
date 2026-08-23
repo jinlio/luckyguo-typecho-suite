@@ -50,6 +50,15 @@ function themeConfig($form)
         _t('主题强调色')
     );
     $form->addInput($accent);
+    $accentCustom = new \Typecho\Widget\Helper\Form\Element\Text(
+        'accentCustom', null, '#c66f84', _t('自定义主题色（六位十六进制颜色）')
+    );
+    $accentCustom->input->setAttribute('type', 'color');
+    $accentCustom->description(_t('启用下方“使用自定义主题色”后生效，建议选择中等明度颜色。'));
+    $form->addInput($accentCustom);
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'useCustomAccent', ['1' => _t('使用自定义主题色')], [], _t('自定义颜色开关')
+    ))->multiMode());
 
     $cookieName = $text('cookieName', '主题偏好 Cookie 名称', 'suite-theme');
     $cookieName->addRule('required', _t('请填写 Cookie 名称'));
@@ -63,6 +72,30 @@ function themeConfig($form)
         ['4' => '4', '8' => '8', '16' => '16', '32' => '32', '64' => '64'],
         '16',
         _t('统计写入分桶数')
+    ));
+    $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
+        'defaultTheme',
+        ['system' => _t('跟随系统'), 'light' => _t('默认浅色'), 'dark' => _t('默认深色')],
+        'system',
+        _t('默认主题模式')
+    ));
+    $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
+        'homeExcerptLength',
+        ['80' => '80', '120' => '120', '150' => '150', '180' => '180', '240' => '240'],
+        '150',
+        _t('首页文章摘要长度')
+    ));
+    $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
+        'recentCommentsCount',
+        ['3' => '3', '5' => '5', '8' => '8', '10' => '10'],
+        '5',
+        _t('首页最近回复数量')
+    ));
+    $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
+        'archiveLimit',
+        ['500' => '500', '1000' => '1000', '2000' => '2000', '5000' => '5000'],
+        '1000',
+        _t('归档最多加载文章数')
     ));
     $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
         'enableStats',
@@ -88,6 +121,12 @@ function themeConfig($form)
         ['1'],
         _t('评论 RSS')
     ))->multiMode());
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'showReadingMeta',
+        ['1' => _t('显示文章评论数、阅读数和预计阅读时间')],
+        ['1'],
+        _t('文章阅读信息')
+    ))->multiMode());
 }
 
 function suite_option($options, string $name, string $fallback): string
@@ -98,6 +137,138 @@ function suite_option($options, string $name, string $fallback): string
     }
     $value = trim((string) $value);
     return $value !== '' ? $value : $fallback;
+}
+
+function suite_custom_accent($options): string
+{
+    if (!suite_flag($options, 'useCustomAccent', false)) {
+        return '';
+    }
+    $value = strtoupper(trim((string) ($options->accentCustom ?? '')));
+    return preg_match('/^#[0-9A-F]{6}$/', $value) ? $value : '';
+}
+
+function suite_mix_color(string $hex, string $target, float $ratio): string
+{
+    $ratio = max(0.0, min(1.0, $ratio));
+    $a = [hexdec(substr($hex, 1, 2)), hexdec(substr($hex, 3, 2)), hexdec(substr($hex, 5, 2))];
+    $b = [hexdec(substr($target, 1, 2)), hexdec(substr($target, 3, 2)), hexdec(substr($target, 5, 2))];
+    $rgb = [];
+    foreach ($a as $index => $channel) {
+        $rgb[] = (int) round($channel + ($b[$index] - $channel) * $ratio);
+    }
+    return sprintf('#%02X%02X%02X', $rgb[0], $rgb[1], $rgb[2]);
+}
+
+function suite_custom_accent_style($options): string
+{
+    $base = suite_custom_accent($options);
+    if ($base === '') {
+        return '';
+    }
+    $lightStrong = suite_mix_color($base, '#000000', .18);
+    $lightSoft = suite_mix_color($base, '#FFFFFF', .88);
+    $darkBase = suite_mix_color($base, '#FFFFFF', .22);
+    $darkStrong = suite_mix_color($base, '#FFFFFF', .38);
+    $darkSoft = suite_mix_color($base, '#000000', .62);
+    return '<style id="suite-custom-accent">body.suite-custom-accent{--accent:' . $base
+        . ';--accent-strong:' . $lightStrong . ';--accent-soft:' . $lightSoft
+        . '}html[data-theme="dark"] body.suite-custom-accent{--accent:' . $darkBase
+        . ';--accent-strong:' . $darkStrong . ';--accent-soft:' . $darkSoft . '}</style>';
+}
+
+function suite_import_default_profile(array &$settings, bool $isInit): bool
+{
+    if (!$isInit) {
+        return false;
+    }
+    try {
+        $options = \Widget\Options::alloc();
+        $db = \Typecho\Db::get();
+        $admin = $db->fetchRow($db->select('uid', 'name', 'screenName', 'mail', 'url')
+            ->from('table.users')->where('group = ?', 'administrator')->order('uid', \Typecho\Db::SORT_ASC)->limit(1));
+        $profile = [];
+        if (!empty($admin['uid'])) {
+            foreach ($db->fetchAll($db->select('name', 'value')->from('table.options')->where('user = ?', (int) $admin['uid'])) as $row) {
+                $profile[(string) $row['name']] = (string) $row['value'];
+            }
+        }
+        $imported = [
+            'siteName' => (string) ($options->title ?? ''),
+            'tagline' => (string) ($options->description ?? ''),
+            'authorName' => (string) ($admin['screenName'] ?? ''),
+            'authorHandle' => (string) ($admin['name'] ?? ''),
+            'landingUrl' => (string) ($admin['url'] ?? ''),
+            'bio' => (string) ($profile['description'] ?? ($profile['bio'] ?? '')),
+            'avatarUrl' => (string) ($profile['avatarUrl'] ?? ''),
+        ];
+        foreach ($imported as $name => $value) {
+            if (trim($value) !== '') {
+                $settings[$name] = $value;
+            }
+        }
+        return true;
+    } catch (\Throwable $error) {
+        error_log('[SuiteDefault] default profile import skipped: ' . $error->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Typecho versions with themeConfigHandle bypass the core settings writer.
+ * Persist here so both first activation and later form saves are reliable.
+ */
+function suite_persist_theme_settings(array $settings): bool
+{
+    try {
+        $db = \Typecho\Db::get();
+        $value = json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($value === false) {
+            return false;
+        }
+        $exists = $db->fetchRow($db->select('name')->from('table.options')
+            ->where('name = ? AND user = ?', 'theme:suite-default', 0)->limit(1));
+        if ($exists) {
+            $db->query($db->update('table.options')->rows(['value' => $value])
+                ->where('name = ? AND user = ?', 'theme:suite-default', 0));
+        } else {
+            $db->query($db->insert('table.options')->rows([
+                'name' => 'theme:suite-default',
+                'value' => $value,
+                'user' => 0,
+            ]));
+        }
+        return true;
+    } catch (\Throwable $error) {
+        error_log('[SuiteDefault] theme settings save skipped: ' . $error->getMessage());
+        return false;
+    }
+}
+
+function themeConfigHandle(array &$settings, bool $isInit): bool
+{
+    if ($isInit) {
+        suite_import_default_profile($settings, true);
+    }
+    return suite_persist_theme_settings($settings);
+}
+
+function suite_flag($options, string $name, bool $fallback = false): bool
+{
+    $value = $options->$name ?? null;
+    if ($value === null || $value === '') {
+        return $fallback;
+    }
+    if (is_array($value)) {
+        return in_array('1', array_map('strval', $value), true);
+    }
+    return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
+}
+
+function suite_int_option($options, string $name, int $fallback, int $minimum, int $maximum): int
+{
+    $value = (int) suite_option($options, $name, (string) $fallback);
+    return max($minimum, min($maximum, $value));
 }
 
 function suite_asset($options, string $name, string $fallback = ''): string
@@ -134,8 +305,7 @@ function suite_cookie_config($options): array
 function suite_statistics_enabled($options = null): bool
 {
     $options = $options ?: \Widget\Options::alloc();
-    $value = $options->enableStats ?? '';
-    return is_array($value) ? in_array('1', $value, true) : (string) $value === '1';
+    return suite_flag($options, 'enableStats', false);
 }
 
 function suite_table_name(string $name): string

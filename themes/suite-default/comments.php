@@ -3,7 +3,7 @@
     <?php $this->comments()->to($comments); ?>
     <div class="comments-heading">
         <h2><?php $this->commentsNum(_t('评论'), _t('1 条评论'), _t('%d 条评论')); ?></h2>
-        <a href="<?php $this->options->commentsFeedUrl(); ?>">订阅评论 RSS</a>
+        <?php if (suite_flag($this->options, 'showCommentsFeed', true)): ?><a href="<?php $this->options->commentsFeedUrl(); ?>">订阅评论 RSS</a><?php endif; ?>
     </div>
 
     <?php if ($comments->have()): ?>

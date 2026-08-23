@@ -17,14 +17,16 @@ if ($archiveDescription === '') {
     <meta name="theme-color" content="#fcfafb">
     <title><?php $this->archiveTitle('', '', ' · '); ?><?php $this->options->title(); ?></title>
     <meta name="description" content="<?php echo htmlspecialchars($archiveDescription, ENT_QUOTES, 'UTF-8'); ?>">
-    <?php $cookie = suite_cookie_config($this->options); $cookieJson = json_encode($cookie, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+    <?php $cookie = suite_cookie_config($this->options); $defaultTheme = suite_option($this->options, 'defaultTheme', 'system'); $cookie['defaultTheme'] = in_array($defaultTheme, ['light', 'dark', 'system'], true) ? $defaultTheme : 'system'; $cookieJson = json_encode($cookie, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
     <script>window.SuiteThemeConfig=<?php echo $cookieJson; ?>;(function(){var c=window.SuiteThemeConfig||{name:'suite-theme',domain:''},m=document.cookie.match(new RegExp('(?:^|;\\s*)'+c.name+'=(dark|light)(?:;|$)')),t=m?m[1]:localStorage.getItem(c.name)||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t;})();</script>
+    <script>(function(){var c=window.SuiteThemeConfig||{},hasCookie=document.cookie.indexOf(c.name+'=')!==-1,saved;try{saved=localStorage.getItem(c.name);}catch(e){}if(!hasCookie&&saved!=='dark'&&saved!=='light'&&(c.defaultTheme==='dark'||c.defaultTheme==='light'))document.documentElement.dataset.theme=c.defaultTheme;})();</script>
     <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css?v=1.6.17'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/comment-form.css?v=1.0.0'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/mac-code.css?v=1.1.4'); ?>">
+    <?php echo suite_custom_accent_style($this->options); ?>
     <?php $this->header(); ?>
 </head>
-<body class="<?php echo suite_accent_class($this->options); ?>">
+<body class="<?php echo suite_accent_class($this->options) . (suite_custom_accent($this->options) !== '' ? ' suite-custom-accent' : ''); ?>">
 <header class="site-header">
     <div class="header-inner">
         <a class="site-brand" href="<?php $this->options->siteUrl(); ?>">
