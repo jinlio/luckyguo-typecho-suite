@@ -7,6 +7,9 @@
 - Fixed monitor rollups when legacy rows have `swap_total=0`: treat unavailable swap as 0 and clamp displayed swap usage to 0-100, preventing MySQL `ERROR 1264` writes to `TINYINT swapp`.
 - Completed the production migration rehearsal with the reusable Suite theme and plugins while preserving the existing site configuration and retaining rollback backups. Database tables were copied into the Suite namespace, legacy tables were left intact, and the search rebuild/monitor schedules were switched to the Suite names.
 - Migration verification covered HTTP status paths, RSS and sitemap responses, search empty state, PHP 8.3 syntax, the read-only installation diagnostic, service health, two clean monitor collections, desktop article TOC scrolling, mobile layout, and light/dark theme rendering. The admin login entry was reachable; authenticated setting-page clicks remain pending because no credentials were entered during the browser check.
+- Fixed Typecho 1.3 output-style `pluginUrl()`/`adminUrl()` handling so SuiteAdmin assets and SuiteMonitor navigation/styles resolve to their plugin paths instead of `/admin.css` or an empty URL.
+- Suppressed warnings when an optional legacy SuiteSearch env path is outside PHP `open_basedir`; configured backend settings continue to take precedence.
+- Updated SuiteMonitor's header brand to read the active theme's site name, author handle, and avatar URL, with the generic Suite mark retained as a fallback.
 - Updated the theme empty state, context-aware article return link, mobile navigation, platform shortcut label, and comment guidance.
 - Added the `useGravatar` theme setting and a local-first comment avatar renderer to avoid third-party requests by default.
 - Updated SuiteMonitor charts to use real timestamp X coordinates, split on sampling gaps, expose data-quality text, and refresh chart SVGs through the admin polling endpoint.

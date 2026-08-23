@@ -70,7 +70,8 @@ final class RuntimeConfig
     {
         try {
             $configured = self::fromOptions($options);
-            if (is_readable($path)) {
+            // open_basedir can reject an optional legacy path; treat that as absent.
+            if (@is_readable($path)) {
                 $legacy = self::fromFile($path);
                 return $configured->withFallback($legacy);
             }

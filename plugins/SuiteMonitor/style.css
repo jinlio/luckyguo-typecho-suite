@@ -64,6 +64,7 @@ html.theme-switching body *::after {
 }
 .brand { display: flex; align-items: center; gap: 12px; color: var(--ink); }
 .suite-monitor-mark { width: 42px; height: 42px; display: inline-grid; place-items: center; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 4px; background: var(--accent-soft); color: var(--accent-strong); font-size: 12px; font-weight: 800; }
+img.suite-monitor-mark { object-fit: cover; }
 .brand span { display: flex; flex-direction: column; line-height: 1.25; }
 .brand strong { font-size: 16px; }
 .brand small { color: var(--ink-soft); font-size: 11px; letter-spacing: .04em; }

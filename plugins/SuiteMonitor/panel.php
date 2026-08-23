@@ -487,9 +487,20 @@ if (isset($_GET['ajax'])) {
 function mon_site_dot($code): string { return ($code >= 200 && $code < 400) ? 'ok' : 'bad'; }
 
 $monSelf = 'extending.php?panel=SuiteMonitor%2Fpanel.php';
-$adminUrl = (string) $monitorOptions->adminUrl();
+$adminUrl = '';
+ob_start();
+$monitorOptions->adminUrl();
+$adminUrl = (string) ob_get_clean();
 $blogUrl = (string) $monitorOptions->siteUrl;
-$monitorPluginUrl = rtrim((string) $monitorOptions->pluginUrl('SuiteMonitor'), '/');
+ob_start();
+$monitorOptions->pluginUrl('SuiteMonitor');
+$monitorPluginUrl = rtrim((string) ob_get_clean(), '/');
+$monitorBrandName = trim((string) ($monitorOptions->siteName ?? $monitorOptions->title ?? 'Typecho Suite')) ?: 'Typecho Suite';
+$monitorBrandHandle = trim((string) ($monitorOptions->authorHandle ?? 'status')) ?: 'status';
+$monitorBrandAvatar = trim((string) ($monitorOptions->avatarUrl ?? ''));
+if (!preg_match('#^https?://#i', $monitorBrandAvatar)) {
+    $monitorBrandAvatar = '';
+}
 $memoryLabel = (int)($S['mem_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['mem_total_mb']) . 'MB RAM' : 'RAM';
 $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_total_mb'] / 1024, 1) . 'GB 盘' : '磁盘';
 $metricsQuality = mon_chart_quality($metrics);
@@ -519,8 +530,12 @@ $monitorChecks = [
 <body>
 <header class="site-header">
     <a class="brand" href="<?= $monSelf ?>">
+        <?php if ($monitorBrandAvatar !== ''): ?>
+        <img class="suite-monitor-mark" src="<?= mon_e($monitorBrandAvatar) ?>" alt="<?= mon_e($monitorBrandName) ?>">
+        <?php else: ?>
         <span class="suite-monitor-mark" aria-hidden="true">TS</span>
-        <span><strong>Typecho Suite</strong><small>status</small></span>
+        <?php endif; ?>
+        <span><strong><?= mon_e($monitorBrandName) ?></strong><small><?= mon_e($monitorBrandHandle) ?></small></span>
     </a>
     <nav class="site-nav"><a href="<?= mon_e($adminUrl) ?>">控制台</a><a href="<?= mon_e($blogUrl) ?>">站点</a><?php foreach ($siteUrl as $key => $url): ?><a href="<?= mon_e($url) ?>"><?= mon_e($siteLabel[$key]) ?></a><?php endforeach; ?></nav>
     <span class="updated" title="采集器每分钟更新">更新于 <span data-f="ts"><?= mon_e($ts) ?></span></span>

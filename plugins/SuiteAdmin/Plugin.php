@@ -41,7 +41,10 @@ class Plugin implements PluginInterface
         $cookieDomain = preg_match('/^\.?[A-Za-z0-9.-]+$/', $cookieDomain) ? $cookieDomain : '';
         $defaultTheme = trim((string) ($settings->defaultTheme ?? 'system'));
         $defaultTheme = in_array($defaultTheme, ['system', 'light', 'dark'], true) ? $defaultTheme : 'system';
-        $base = rtrim((string) $options->pluginUrl('SuiteAdmin'), '/') . '/';
+        // Typecho 1.3's pluginUrl() echoes instead of returning the URL.
+        ob_start();
+        $options->pluginUrl('SuiteAdmin');
+        $base = rtrim((string) ob_get_clean(), '/') . '/';
         $config = json_encode(['name' => $cookieName, 'domain' => $cookieDomain, 'defaultTheme' => $defaultTheme], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         return $header
             . "\n" . '<script>window.SuiteAdminThemeConfig=' . $config . ';(function(){var c=window.SuiteAdminThemeConfig,m=document.cookie.match(new RegExp("(?:^|;\\\\s*)"+c.name+"=(dark|light)(?:;|$)")),saved="";try{saved=localStorage.getItem(c.name)||"";}catch(e){}var t=m?m[1]:saved||((matchMedia("(prefers-color-scheme:dark)").matches)?"dark":"light");if(!m&&!saved&&(c.defaultTheme==="dark"||c.defaultTheme==="light"))t=c.defaultTheme;document.documentElement.dataset.theme=t;})();</script>'
