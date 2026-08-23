@@ -185,6 +185,11 @@ function suite_import_default_profile(array &$settings, bool $isInit): bool
     try {
         $options = \Widget\Options::alloc();
         $db = \Typecho\Db::get();
+        $existing = $db->fetchRow($db->select('name')->from('table.options')
+            ->where('name = ? AND user = ?', 'theme:suite-default', 0)->limit(1));
+        if ($existing) {
+            return false;
+        }
         $admin = $db->fetchRow($db->select('uid', 'name', 'screenName', 'mail', 'url')
             ->from('table.users')->where('group = ?', 'administrator')->order('uid', \Typecho\Db::SORT_ASC)->limit(1));
         $profile = [];
@@ -248,7 +253,10 @@ function suite_persist_theme_settings(array $settings): bool
 function themeConfigHandle(array &$settings, bool $isInit): bool
 {
     if ($isInit) {
-        suite_import_default_profile($settings, true);
+        // Keep a previously saved theme configuration intact on reactivation.
+        if (!suite_import_default_profile($settings, true)) {
+            return true;
+        }
     }
     return suite_persist_theme_settings($settings);
 }
