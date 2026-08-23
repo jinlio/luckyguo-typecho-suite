@@ -10,3 +10,4 @@ usr/backups/
 *.bak*
 ._*
 .DS_Store
+CHANGELOG.md
