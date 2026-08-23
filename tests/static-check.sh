@@ -18,7 +18,7 @@ if command -v node >/dev/null 2>&1; then
   node --check plugins/SuiteAdmin/admin.js
 fi
 
-for script in deploy/monitor-collect.sh deploy/monitor-prune.sh deploy/check-install.sh deploy/install-monitor.sh; do
+for script in deploy/monitor-collect.sh deploy/monitor-log-collect.sh deploy/monitor-prune.sh deploy/check-install.sh deploy/install-monitor.sh; do
   bash -n "$script"
 done
 

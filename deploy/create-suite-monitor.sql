@@ -69,3 +69,17 @@ CREATE TABLE IF NOT EXISTS traffic_hourly (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS traffic_daily LIKE traffic_hourly;
+
+-- Optional event stream used by the dashboard's 24-hour exception log.
+-- A collector may populate this table from local files or journald.
+CREATE TABLE IF NOT EXISTS log_events (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    ts DATETIME NOT NULL,
+    source VARCHAR(32) NOT NULL,
+    level ENUM('info', 'warn', 'error') NOT NULL DEFAULT 'warn',
+    message VARCHAR(500) NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_log_events_ts (ts),
+    KEY idx_log_events_source_ts (source, ts),
+    KEY idx_log_events_level_ts (level, ts)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -1,4 +1,5 @@
 # New installations read all values from the SuiteMonitor backend settings.
 # Change only the Typecho root, exporter path, and installed script paths.
 * * * * * root TYPECHO_ROOT=/var/www/typecho TYPECHO_SUITE_MONITOR_EXPORTER=/usr/local/libexec/typecho-suite-monitor-config.php /usr/local/sbin/typecho-suite-monitor-collect >> /var/log/typecho-suite-monitor.log 2>&1
+* * * * * root TYPECHO_ROOT=/var/www/typecho TYPECHO_SUITE_MONITOR_EXPORTER=/usr/local/libexec/typecho-suite-monitor-config.php /usr/local/sbin/typecho-suite-monitor-log-collect >> /var/log/typecho-suite-monitor.log 2>&1
 17 4 * * * root TYPECHO_ROOT=/var/www/typecho TYPECHO_SUITE_MONITOR_EXPORTER=/usr/local/libexec/typecho-suite-monitor-config.php /usr/local/sbin/typecho-suite-monitor-prune >> /var/log/typecho-suite-monitor.log 2>&1

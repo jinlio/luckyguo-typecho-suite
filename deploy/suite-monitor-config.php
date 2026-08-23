@@ -38,6 +38,7 @@ $fields = [
     'siteTargets' => 'SITE_TARGETS', 'statusOwner' => 'STATUS_OWNER',
     'statusGroup' => 'STATUS_GROUP', 'statusMode' => 'STATUS_MODE',
     'monitorRoUser' => 'MONITOR_RO_USER', 'monitorRoPass' => 'MONITOR_RO_PASS',
+    'logJournalUnits' => 'LOG_JOURNAL_UNITS',
     'rawRetentionDays' => 'RAW_RETENTION_DAYS', 'rollupRetentionDays' => 'ROLLUP_RETENTION_DAYS',
 ];
 foreach ($fields as $field => $name) {
@@ -50,6 +51,10 @@ foreach ($fields as $field => $name) {
     }
     $quoted = "'" . str_replace("'", "'\\''", $value) . "'";
     echo $name . '=' . $quoted . "\n";
+}
+$logSources = trim((string) ($settings->logSources ?? ''));
+if ($logSources !== '' && !preg_match('/[^\x20-\x7E\r\n=:\/.@_-]/', $logSources)) {
+    echo 'LOG_SOURCES_B64=' . escapeshellarg(base64_encode($logSources)) . "\n";
 }
 $statusFile = trim((string) ($settings->statusFile ?? ''));
 if ($statusFile !== '') {

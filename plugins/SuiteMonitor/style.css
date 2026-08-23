@@ -13,6 +13,32 @@
     --sage: #5d8276;
     --page: 1120px;
 }
+
+/* ---------- 24 小时异常日志 ---------- */
+.log-filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.log-filter { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line); background: var(--surface-soft); color: var(--ink-soft); font-size: 12px; font-weight: 700; line-height: 1.5; transition: border-color .2s, color .2s, background-color .2s; }
+.log-filter:hover { border-color: var(--accent); color: var(--ink); }
+.log-filter.cur { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+.log-filter b { font-weight: 800; }
+.log-table { overflow-x: auto; }
+.log-row { display: grid; grid-template-columns: 128px 96px 56px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 8px 12px; font-size: 12.5px; line-height: 1.6; border-top: 1px solid var(--line); transition: background-color .15s; }
+.log-row:hover { background: var(--surface-soft); }
+.log-row:first-child { border-top: none; }
+.log-row.log-head { color: var(--ink-soft); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding-top: 4px; padding-bottom: 4px; }
+.log-row.log-empty { display: flex; color: var(--ink-soft); padding: 18px 12px; justify-content: center; }
+.log-t { color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.log-src { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--sage); font-size: 11.5px; }
+.log-src.src-sshd, .log-src.src-kernel { color: var(--accent-strong); }
+.log-src.src-nginx, .log-src.src-php-fpm { color: var(--sage); }
+.log-src.src-cloudflared, .log-src.src-gitea, .log-src.src-meilisearch, .log-src.src-mysql { color: var(--ink-soft); }
+.log-badge { justify-self: start; padding: 0 8px; border-radius: 999px; font-size: 10.5px; font-weight: 800; line-height: 1.7; white-space: nowrap; }
+.log-badge.error { background: var(--accent-soft); color: var(--accent-strong); }
+.log-badge.warn { background: var(--surface-soft); color: var(--sage); border: 1px solid var(--line); }
+.log-badge.info { background: var(--surface-soft); color: var(--ink-soft); border: 1px solid var(--line); }
+.log-fresh { font-weight: 600; }
+.log-fresh.stale { color: var(--accent-strong); }
+.log-msg { color: var(--ink); min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all; }
+@media (max-width: 575px) { .log-row { grid-template-columns: 108px 80px 48px minmax(0, 1fr); gap: 7px; padding: 6px 8px; } }
 [data-theme="dark"] {
     color-scheme: dark;
     --bg: #1c191d;
@@ -237,6 +263,7 @@ footer {
     display: flex; justify-content: space-between;
     color: var(--ink-soft); font-size: 11px; letter-spacing: .06em;
 }
+footer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 680px) {
     .site-header,

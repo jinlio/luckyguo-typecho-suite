@@ -42,6 +42,7 @@ $monParseMap = static function ($raw): array {
 $configuredSiteLabels = $monParseMap($monitorSettings->siteLabels ?? '');
 $configuredSiteUrls = $monParseMap($monitorSettings->siteUrls ?? '');
 $configuredServiceLabels = $monParseMap($monitorSettings->serviceLabels ?? '');
+$configuredNavItems = $monParseMap($monitorSettings->navItems ?? '');
 $configuredRange = trim((string) ($monitorSettings->defaultRange ?? '24h'));
 $defaultRange = in_array($configuredRange, ['24h', '7d', '30d', '1y'], true) ? $configuredRange : '24h';
 $refreshSeconds = (int) ($monitorSettings->refreshSeconds ?? 30);
@@ -49,6 +50,8 @@ $refreshSeconds = in_array($refreshSeconds, [0, 30, 60, 300], true) ? $refreshSe
 $defaultTheme = trim((string) ($monitorSettings->defaultTheme ?? 'system'));
 $defaultTheme = in_array($defaultTheme, ['system', 'light', 'dark'], true) ? $defaultTheme : 'system';
 define('MON_STATUS_FILE', $monitorValue('statusFile', '/var/lib/typecho-suite/monitor/status.json'));
+define('MON_STATE_DIR', $monitorValue('stateDir', '/var/lib/typecho-suite/monitor'));
+define('MON_LOG_HEARTBEAT', rtrim(MON_STATE_DIR, '/') . '/log-heartbeat');
 define('MON_ENV_FILE', $monitorValue('envFile', '/etc/typecho-suite/monitor.env'));
 define('MON_DB_DSN', $monitorValue('databaseDsn', 'mysql:host=127.0.0.1;dbname=monitor;charset=utf8mb4'));
 define('MON_TYPECHO_DB', preg_replace('/[^A-Za-z0-9_]/', '', $monitorValue('typechoDatabase', 'typecho')) ?: 'typecho');
@@ -400,6 +403,46 @@ if (MON_STATS_ENABLED) {
          GROUP BY v.cid, c.title ORDER BY vv DESC LIMIT 5");
 }
 
+// ---------- 24h 异常日志 ----------
+// log_events is optional: the dashboard remains usable when no collector has been installed.
+$logs = [];
+$logEvents = mon_db_all($pdo, 'log events',
+    "SELECT ts, source, level, message FROM log_events
+     WHERE ts >= NOW() - INTERVAL 1 DAY ORDER BY ts DESC LIMIT 300");
+$siteFails = mon_db_all($pdo, 'site failures',
+    "SELECT ts, 'site' AS source, 'error' AS level,
+            CONCAT('站点探测失败: ', target, ' HTTP ', http_code,
+                   CASE WHEN http_code=0 THEN '（连接超时或拒绝）' ELSE '' END) AS message
+     FROM site_checks WHERE ts >= NOW() - INTERVAL 1 DAY
+       AND (http_code = 0 OR http_code >= 500)
+     ORDER BY ts DESC LIMIT 50");
+foreach (array_merge($logEvents, $siteFails) as $logEvent) {
+    $logs[] = [
+        'ts' => (string)($logEvent['ts'] ?? ''),
+        'source' => (string)($logEvent['source'] ?? 'unknown'),
+        'level' => (string)($logEvent['level'] ?? 'warn'),
+        'message' => (string)($logEvent['message'] ?? ''),
+    ];
+}
+usort($logs, static fn(array $a, array $b): int => strcmp($b['ts'], $a['ts']));
+$logs = array_slice($logs, 0, 300);
+$logCounts = ['all' => count($logs), 'error' => 0, 'warn' => 0, 'info' => 0];
+foreach ($logs as $logEvent) {
+    if (isset($logCounts[$logEvent['level']])) {
+        $logCounts[$logEvent['level']]++;
+    }
+}
+$logHeartbeat = '';
+$heartbeatRaw = @file_get_contents(MON_LOG_HEARTBEAT);
+if ($heartbeatRaw !== false && strtotime(trim($heartbeatRaw)) !== false) {
+    $logHeartbeat = trim($heartbeatRaw);
+}
+$logHeartbeatTime = $logHeartbeat !== '' ? strtotime($logHeartbeat) : false;
+$logCollectionEnabled = trim((string)($monitorSettings->logSources ?? '')) !== ''
+    || trim((string)($monitorSettings->logJournalUnits ?? '')) !== '';
+$logFreshStale = $logCollectionEnabled
+    && ($logHeartbeatTime === false || (time() - $logHeartbeatTime > 150));
+
 // ---------- 快照取值 ----------
 $cpu = (int)($S['cpu_pct'] ?? 0);
 $load = $S['load'] ?? [0, 0, 0];
@@ -455,6 +498,15 @@ $stripRows = [];
 foreach ($sites24h as $r) $stripRows[$r['target']][strtotime((string)$r['b'])] = $r;
 $uptimeMap = array_column($uptime30, 'up', 'target');
 
+if (isset($_GET['ajaxlog'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'rows' => $logs,
+        'collected_at' => $logHeartbeat,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if (isset($_GET['ajax'])) {
     header('Content-Type: application/json; charset=utf-8');
     $charts = [
@@ -495,6 +547,48 @@ $blogUrl = (string) $monitorOptions->siteUrl;
 ob_start();
 $monitorOptions->pluginUrl('SuiteMonitor');
 $monitorPluginUrl = rtrim((string) ob_get_clean(), '/');
+$navItems = [];
+$navConfig = $configuredNavItems ?: [
+    'console' => '控制台|admin',
+    'home' => '首页|site',
+    'landing' => '落地页|landing',
+];
+foreach ($navConfig as $key => $rawItem) {
+    $key = (string) $key;
+    $rawItem = trim((string) $rawItem);
+    $parts = explode('|', $rawItem, 2);
+    $label = trim((string)($parts[0] ?? ''));
+    $target = trim((string)($parts[1] ?? ''));
+    if ($label === '' || $target === '') {
+        continue;
+    }
+    if ($target === 'admin') {
+        $url = $adminUrl;
+    } elseif ($target === 'site') {
+        $url = $blogUrl;
+    } elseif (isset($siteUrl[$target])) {
+        $url = $siteUrl[$target];
+    } elseif (preg_match('#^https?://#i', $target)) {
+        $url = $target;
+    } else {
+        continue;
+    }
+    if ($url !== '') {
+        $navItems[] = ['label' => $label, 'url' => $url, 'key' => $key];
+    }
+}
+$footerRepoUrl = trim((string)($monitorSettings->footerRepoUrl ?? ''));
+if (!preg_match('#^https?://#i', $footerRepoUrl)) {
+    $footerRepoUrl = '';
+}
+$footerRepoSetting = $monitorSettings->showFooterRepo ?? null;
+$showFooterRepo = $footerRepoSetting === null
+    ? $footerRepoUrl !== ''
+    : in_array('1', array_map('strval', (array)$footerRepoSetting), true);
+if (!$showFooterRepo) {
+    $footerRepoUrl = '';
+}
+$footerRepoLabel = trim((string)($monitorSettings->footerRepoLabel ?? '')) ?: '代码仓库';
 $monitorBrandName = trim((string) ($monitorSettings->brandName ?? ''))
     ?: trim((string) ($monitorOptions->siteName ?? $monitorOptions->title ?? 'Typecho Suite'));
 $monitorBrandName = $monitorBrandName ?: 'Typecho Suite';
@@ -528,7 +622,7 @@ $monitorChecks = [
 <meta name="description" content="Typecho Suite 站点状态监控">
 <meta name="theme-color" content="<?= (($_COOKIE[MON_COOKIE_NAME] ?? '') === 'dark') ? '#1c191d' : '#fcfafb' ?>">
 <meta name="robots" content="noindex, nofollow">
-<title>站点状态 · Typecho Suite</title>
+<title>站点状态 · <?= mon_e($monitorBrandName) ?></title>
 <script>window.SuiteMonitorThemeConfig=<?= json_encode(['name' => MON_COOKIE_NAME, 'domain' => MON_COOKIE_DOMAIN, 'defaultTheme' => $defaultTheme], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;(function(){var c=window.SuiteMonitorThemeConfig,m=document.cookie.match(new RegExp('(?:^|;\\s*)'+c.name+'=(dark|light)(?:;|$)')),saved='';try{saved=localStorage.getItem(c.name)||'';}catch(e){}var t=m?m[1]:saved||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m&&!saved&&(c.defaultTheme==='dark'||c.defaultTheme==='light'))t=c.defaultTheme;document.documentElement.dataset.theme=t;})();</script>
 <link rel="stylesheet" href="<?= mon_e($monitorPluginUrl . '/style.css?v=2.0.0') ?>">
 </head>
@@ -542,7 +636,7 @@ $monitorChecks = [
         <?php endif; ?>
         <span><strong><?= mon_e($monitorBrandName) ?></strong><small><?= mon_e($monitorBrandHandle) ?></small></span>
     </a>
-    <nav class="site-nav"><a href="<?= mon_e($adminUrl) ?>">控制台</a><a href="<?= mon_e($blogUrl) ?>">站点</a><?php foreach ($siteUrl as $key => $url): ?><a href="<?= mon_e($url) ?>"><?= mon_e($siteLabel[$key]) ?></a><?php endforeach; ?></nav>
+    <nav class="site-nav"><?php foreach ($navItems as $navItem): ?><a href="<?= mon_e($navItem['url']) ?>"><?= mon_e($navItem['label']) ?></a><?php endforeach; ?></nav>
     <span class="updated" title="采集器每分钟更新">更新于 <span data-f="ts"><?= mon_e($ts) ?></span></span>
     <button class="theme-toggle" type="button" aria-label="切换深浅色主题" title="切换主题">◐</button>
 </header>
@@ -714,11 +808,47 @@ $monitorChecks = [
         </div>
     </section>
     <?php endif; ?>
+
+    <!-- 异常日志 -->
+    <section>
+        <header>
+            <div><p class="eyebrow">LOGS</p><h2>24 小时异常日志</h2></div>
+            <span class="hint">文件日志与站点探测失败<?php if ($logFreshStale): ?> · <span id="log-fresh" class="log-fresh stale">采集可能异常</span><?php else: ?><span id="log-fresh" class="log-fresh"></span><?php endif; ?></span>
+        </header>
+        <div class="panel">
+            <div class="log-filters" role="tablist" aria-label="日志级别筛选">
+                <button type="button" class="log-filter cur" data-lf="all" role="tab" aria-selected="true">全部 <b><?= $logCounts['all'] ?></b></button>
+                <button type="button" class="log-filter" data-lf="error" role="tab" aria-selected="false">错误 <b><?= $logCounts['error'] ?></b></button>
+                <button type="button" class="log-filter" data-lf="warn" role="tab" aria-selected="false">警告 <b><?= $logCounts['warn'] ?></b></button>
+                <button type="button" class="log-filter" data-lf="info" role="tab" aria-selected="false">信息 <b><?= $logCounts['info'] ?></b></button>
+            </div>
+            <div class="log-table">
+                <div class="log-row log-head"><span>时间</span><span>来源</span><span>级别</span><span>消息</span></div>
+                <div id="log-rows">
+                    <?php if (!$logs): ?>
+                    <div class="log-row log-empty"><span>近 24 小时暂无日志事件</span></div>
+                    <?php else: foreach ($logs as $logEvent):
+                        $level = in_array($logEvent['level'], ['error', 'warn', 'info'], true) ? $logEvent['level'] : 'warn';
+                        $levelName = ['error' => '错误', 'warn' => '警告', 'info' => '信息'][$level];
+                        $sourceClass = preg_match('/^[a-zA-Z0-9-]+$/', $logEvent['source']) ? $logEvent['source'] : 'other';
+                        $eventTime = strtotime($logEvent['ts']);
+                    ?>
+                    <div class="log-row" data-lv="<?= mon_e($level) ?>">
+                        <span class="log-t"><?= mon_e($eventTime ? date('m-d H:i:s', $eventTime) : $logEvent['ts']) ?></span>
+                        <span class="log-src src-<?= mon_e($sourceClass) ?>"><?= mon_e($logEvent['source']) ?></span>
+                        <span class="log-badge <?= mon_e($level) ?>"><?= mon_e($levelName) ?></span>
+                        <span class="log-msg" title="<?= mon_e($logEvent['message']) ?>"><?= mon_e($logEvent['message']) ?></span>
+                    </div>
+                    <?php endforeach; endif; ?>
+                </div>
+            </div>
+        </div>
+    </section>
 </main>
 
 <div class="chart-tooltip" role="status" aria-live="polite"></div>
 
-<footer><span>Typecho Suite</span><span>STATUS / <?= date('Y') ?></span></footer>
+<footer><span><?= mon_e($monitorBrandName) ?> · <?= mon_e($monitorBrandHandle) ?></span><span>STATUS / <?= date('Y') ?><?php if ($footerRepoUrl !== ''): ?> · <a href="<?= mon_e($footerRepoUrl) ?>" rel="noopener noreferrer" target="_blank"><?= mon_e($footerRepoLabel) ?></a><?php endif; ?></span></footer>
 
 <script>
 (function(){
@@ -750,6 +880,35 @@ $monitorChecks = [
     if(d.sites)for(var s in d.sites){var c=d.sites[s].code,ok2=c>=200&&c<400;var cd=document.querySelector('[data-site-code="'+s+'"]');if(cd){cd.textContent=c||'—';cd.classList.remove('ok','bad');cd.classList.add(ok2?'ok':'bad');}var tt=document.querySelector('[data-site-ttfb="'+s+'"]');if(tt)tt.textContent=d.sites[s].ttfb_ms;var sd=document.querySelector('[data-site-dot="'+s+'"]');if(sd){sd.classList.remove('ok','bad');sd.classList.add(ok2?'ok':'bad');}}
   }).catch(function(){});};
   <?php if ($refreshSeconds > 0): ?>setInterval(poll,<?= $refreshSeconds * 1000 ?>);<?php endif; ?>
+  var logFilter='all',rowsBox=document.getElementById('log-rows'),filters=document.querySelectorAll('.log-filter'),freshEl=document.getElementById('log-fresh');
+  var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+  var levelNames={error:'错误',warn:'警告',info:'信息'};
+  var logRows=<?= json_encode($logs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+  var renderLogs=function(list){
+    var filtered=logFilter==='all'?list:list.filter(function(r){return r.level===logFilter;});
+    var html='';
+    if(!list.length) html='<div class="log-row log-empty"><span>近 24 小时暂无日志事件</span></div>';
+    else if(!filtered.length) html='<div class="log-row log-empty"><span>当前筛选下无记录</span></div>';
+    else filtered.forEach(function(r){
+      var lv=levelNames[r.level]?r.level:'warn',ts=String(r.ts||''),t=ts.length>=19?ts.slice(5,19):ts;
+      var source=/^[a-zA-Z0-9-]+$/.test(String(r.source||''))?String(r.source):'other';
+      html+='<div class="log-row" data-lv="'+esc(lv)+'"><span class="log-t">'+esc(t)+'</span><span class="log-src src-'+esc(source)+'">'+esc(r.source||'unknown')+'</span><span class="log-badge '+lv+'">'+levelNames[lv]+'</span><span class="log-msg" title="'+esc(r.message||'')+'">'+esc(r.message||'')+'</span></div>';
+    });
+    if(rowsBox) rowsBox.innerHTML=html;
+  };
+  filters.forEach(function(button){button.addEventListener('click',function(){
+    logFilter=button.getAttribute('data-lf')||'all';
+    filters.forEach(function(item){item.classList.remove('cur');item.setAttribute('aria-selected','false');});
+    button.classList.add('cur');button.setAttribute('aria-selected','true');renderLogs(logRows);
+  });});
+  var pollLogs=function(){fetch('<?= $monSelf ?>&ajaxlog=1',{cache:'no-store'}).then(function(r){return r.json();}).then(function(payload){
+    logRows=payload&&Array.isArray(payload.rows)?payload.rows:[];
+    var counts={all:logRows.length,error:0,warn:0,info:0};logRows.forEach(function(r){if(counts[r.level]!==undefined)counts[r.level]++;});
+    filters.forEach(function(button){var n=button.querySelector('b'),k=button.getAttribute('data-lf');if(n)n.textContent=counts[k]||0;});
+    if(freshEl&&payload&&payload.collected_at){var ft=Date.parse(String(payload.collected_at).replace(' ','T')+'+08:00'),stale=!isNaN(ft)&&Date.now()-ft>150000;freshEl.textContent=stale?'采集可能异常':'';freshEl.classList.toggle('stale',stale);}
+    renderLogs(logRows);
+  }).catch(function(){});};
+  setInterval(pollLogs,60000);
 })();
 </script>
 </body>

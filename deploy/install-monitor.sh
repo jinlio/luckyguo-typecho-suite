@@ -13,13 +13,14 @@ STATE_DIR="${TYPECHO_SUITE_STATE_DIR:-/var/lib/typecho-suite/monitor}"
 CRON_FILE="${TYPECHO_SUITE_CRON_FILE:-/etc/cron.d/typecho-suite-monitor}"
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
-for file in monitor-collect.sh monitor-prune.sh suite-monitor-config.php; do
+for file in monitor-collect.sh monitor-log-collect.sh monitor-prune.sh suite-monitor-config.php; do
   [[ -f "$SCRIPT_DIR/$file" ]] || { echo "缺少安装文件: $SCRIPT_DIR/$file" >&2; exit 1; }
 done
 [[ -f "$ROOT/config.inc.php" ]] || { echo "找不到 Typecho 根目录: $ROOT" >&2; exit 1; }
 
 install -d -m 0750 "$PREFIX/sbin" "$PREFIX/libexec" "$STATE_DIR"
 install -m 0750 "$SCRIPT_DIR/monitor-collect.sh" "$PREFIX/sbin/typecho-suite-monitor-collect"
+install -m 0750 "$SCRIPT_DIR/monitor-log-collect.sh" "$PREFIX/sbin/typecho-suite-monitor-log-collect"
 install -m 0750 "$SCRIPT_DIR/monitor-prune.sh" "$PREFIX/sbin/typecho-suite-monitor-prune"
 install -m 0750 "$SCRIPT_DIR/suite-monitor-config.php" "$PREFIX/libexec/typecho-suite-monitor-config.php"
 
@@ -28,6 +29,7 @@ umask 022
 printf '%s\n' \
   '# Managed by Typecho Suite. Configure values in the SuiteMonitor admin page.' \
   "* * * * * root TYPECHO_ROOT='$ROOT' TYPECHO_SUITE_MONITOR_EXPORTER='$PREFIX/libexec/typecho-suite-monitor-config.php' '$PREFIX/sbin/typecho-suite-monitor-collect' >> /var/log/typecho-suite-monitor.log 2>&1" \
+  "* * * * * root TYPECHO_ROOT='$ROOT' TYPECHO_SUITE_MONITOR_EXPORTER='$PREFIX/libexec/typecho-suite-monitor-config.php' '$PREFIX/sbin/typecho-suite-monitor-log-collect' >> /var/log/typecho-suite-monitor.log 2>&1" \
   "17 4 * * * root TYPECHO_ROOT='$ROOT' TYPECHO_SUITE_MONITOR_EXPORTER='$PREFIX/libexec/typecho-suite-monitor-config.php' '$PREFIX/sbin/typecho-suite-monitor-prune' >> /var/log/typecho-suite-monitor.log 2>&1" \
   > "$CRON_FILE"
 chmod 0644 "$CRON_FILE"

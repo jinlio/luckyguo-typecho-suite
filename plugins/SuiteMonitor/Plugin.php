@@ -130,6 +130,26 @@ class Plugin implements PluginInterface
             'siteUrls', null, "blog=https://blog.example.com\ndocs=https://docs.example.com", _t('监测目标链接（每行填写 key=网址，可选）')
         ));
         $form->addInput(new Form\Element\Textarea(
+            'navItems', null, "console=控制台|admin\nhome=首页|site\nlanding=落地页|landing", _t('监控顶部导航（每行填写 key=名称|目标；目标可填 admin、site、已配置站点 key 或 HTTP(S) 地址）')
+        ));
+        $footerRepo = new Form\Element\Text(
+            'footerRepoUrl', null, '', _t('页脚代码仓库地址（留空隐藏）')
+        );
+        $footerRepo->addRule('url', _t('请输入有效的 HTTP(S) 地址'));
+        $form->addInput($footerRepo);
+        $form->addInput(new Form\Element\Text(
+            'footerRepoLabel', null, '代码仓库', _t('页脚代码仓库名称')
+        ));
+        $form->addInput((new Form\Element\Checkbox(
+            'showFooterRepo', ['1' => _t('在页脚显示代码仓库链接')], [], _t('页脚链接开关')
+        ))->multiMode());
+        $form->addInput(new Form\Element\Textarea(
+            'logSources', null, "nginx=/var/log/nginx/error.log\nphp-fpm=/var/log/php-fpm/error.log", _t('异常日志文件来源（每行填写 source=绝对路径，可选；由采集器增量读取）')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'logJournalUnits', null, 'sshd nginx php-fpm mysqld', _t('异常日志 journald 服务（空格分隔，可选）')
+        ));
+        $form->addInput(new Form\Element\Textarea(
             'serviceLabels', null, "nginx=Nginx\nphp-fpm=PHP-FPM\nmysqld=MySQL", _t('服务显示名称（每行填写服务名=显示名称，可选）')
         ));
         $form->addInput(new Form\Element\Text(

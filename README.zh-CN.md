@@ -139,6 +139,8 @@ MEILI_INDEX_LIVE=posts_live
 
 先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`，再运行 `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期，并选择面板默认时间范围、自动刷新频率、默认主题，还可以设置监控面板自己的站点名称、标识和头像地址。品牌字段留空时自动继承当前主题的站点名称、作者标识和头像。采集器会优先读取后台设置；遇到安装或运行问题时使用 `deploy/check-install.sh`。
 
+监控顶部导航在 `navItems` 中配置，每行格式为 `key=名称|目标`，目标可以是 `admin`、`site`、已配置的站点 key 或 HTTP(S) 地址。默认只显示“控制台”“首页”“落地页”；未配置的目标会自动隐藏。页脚代码仓库由“显示代码仓库”开关和 `footerRepoUrl` 控制，默认隐藏。异常日志由 `logSources`（每行 `source=绝对路径`）和 `logJournalUnits` 配置，采集器写入 `log_events`，面板提供近 24 小时列表、级别筛选和自动刷新。
+
 旧版 `/etc/typecho-suite/monitor.env` 仍可作为升级期间的兼容回退，新安装无需手工编辑；示例 cron 已默认只使用后台设置导出器。后台密码框留空表示保留已有密码，勾选密码管理中的清除选项才会移除；密码不会写入状态快照或日志。
 
 `SITE_TARGETS` 使用空格分隔的 `key=host:port`，例如 `blog=blog.example.com:80 docs=docs.example.com:80`。显示名称、公开链接和服务名称使用“一行一个 `key=值`”填写，不需要编写 JSON；旧版本保存的 JSON 仍可继续读取。服务、主机、路径、保留天数、Cookie、监控 DSN、表前缀和 CPU 核数均可在后台修改；监控面板仅允许管理员访问。

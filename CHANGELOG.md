@@ -38,4 +38,8 @@
 - The monitor installer passed a root smoke test on the server using isolated `/tmp` paths; no production paths were changed.
 - Hardened chart rendering for the single-timestamp edge case so a valid point stays centered instead of collapsing against the Y axis.
 - `git diff --check` passed.
+- Restored SuiteMonitor's configurable top navigation with Console/Home/Landing defaults, optional custom links, and an opt-in footer repository link.
+- Restored the 24-hour exception log with level filters, AJAX refresh, collector heartbeat status, and site-probe failures; added configurable file/journald sources, `log_events` schema, retention, installer, and cron integration.
+- Production verification: created a rollback snapshot at `/var/backups/luckyguo/monitor-navigation-logs-20260823-195955`, deployed the monitor files, passed PHP 8.3.33 lint, confirmed a single `SuiteMonitor/panel.php` registration, confirmed the log heartbeat, and confirmed log rows continue to be written.
+- Added the new GUI and log collector behavior to `README.md` and `README.zh-CN.md`.
 - Not yet verified: PHP 7.4 runtime behavior, browser screenshots at mobile/desktop sizes, and production deployment.
