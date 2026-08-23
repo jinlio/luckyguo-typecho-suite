@@ -17,12 +17,12 @@ $this->need('header.php');
         <div class="journal-identity">
             <?php echo suite_avatar_markup($this->options); ?>
             <div>
-                <p class="eyebrow">JOURNAL / PERSONAL SPACE</p>
+                <p class="eyebrow"><?php echo htmlspecialchars(suite_option($this->options, 'homeEyebrow', 'JOURNAL / PERSONAL SPACE'), ENT_QUOTES, 'UTF-8'); ?></p>
                 <h1><?php echo htmlspecialchars(suite_option($this->options, 'siteName', (string) $this->options->title), ENT_QUOTES, 'UTF-8'); ?></h1>
                 <p class="intro-note"><?php echo nl2br(htmlspecialchars(suite_option($this->options, 'bio', '记录学习、折腾和那些值得留住的细节。'))); ?></p>
             </div>
         </div>
-        <p class="intro-signature">LEARN · BUILD · LIVE<span>慢慢写，也认真生活。</span></p>
+        <p class="intro-signature"><?php echo htmlspecialchars(suite_option($this->options, 'homeSignature', 'LEARN · BUILD · LIVE'), ENT_QUOTES, 'UTF-8'); ?><span><?php echo htmlspecialchars(suite_option($this->options, 'homeSignatureNote', '慢慢写，也认真生活。'), ENT_QUOTES, 'UTF-8'); ?></span></p>
     </section>
     <?php $bannerUrl = suite_asset($this->options, 'bannerUrl'); ?>
     <?php if ($bannerUrl !== ''): ?><figure class="journal-banner"><img src="<?php echo htmlspecialchars($bannerUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars(suite_option($this->options, 'bannerAlt', '站点首页横幅'), ENT_QUOTES, 'UTF-8'); ?>" fetchpriority="high"></figure><?php endif; ?>
@@ -38,7 +38,7 @@ $this->need('header.php');
     </header>
     <?php endif; ?>
 
-    <div class="section-heading"><strong><?php echo $this->is('index') ? '最新记录' : '文章列表'; ?></strong><span>RECENT WRITING</span></div>
+    <div class="section-heading"><strong><?php echo htmlspecialchars($this->is('index') ? suite_option($this->options, 'postListTitle', '最新记录') : '文章列表', ENT_QUOTES, 'UTF-8'); ?></strong><span><?php echo htmlspecialchars(suite_option($this->options, 'postListLabel', 'RECENT WRITING'), ENT_QUOTES, 'UTF-8'); ?></span></div>
     <section class="post-list" aria-label="文章列表">
         <?php if ($this->have()): ?>
             <?php $postCids = $this->toArray('cid'); ?>

@@ -47,6 +47,14 @@ body {
     line-height: 1.8;
     letter-spacing: 0;
 }
+body.suite-no-motion *,
+body.suite-no-motion *::before,
+body.suite-no-motion *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+}
 a { color: inherit; text-decoration: none; }
 button, input, textarea { color: inherit; font: inherit; }
 button { cursor: pointer; }

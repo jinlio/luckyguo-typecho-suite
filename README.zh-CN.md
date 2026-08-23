@@ -92,9 +92,9 @@ rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/
 
 [](#theme-configuration)
 
-主题配置页可设置站点名称、作者信息、副标题、简介、关于页引导语/方向/技术栈/状态、头像、首页横幅、文章封面、站点与代码仓库链接、预设或自定义主题色、主题 Cookie、默认浅深色模式、站点起始时间、访问统计、首页附加模块、文章目录、文章阅读信息、评论 RSS、首页摘要长度和归档数量。
+主题配置页可设置站点名称、作者信息、副标题、简介、关于页引导语/方向/技术栈/状态、首页眉题/签名/列表标题、文章作者和目录标签、头像、首页横幅、文章封面、站点与代码仓库链接、预设或自定义主题色、主题 Cookie、默认浅深色模式、页面和正文宽度、预计阅读速度、站点起始时间、访问统计、首页附加模块、文章目录层级、文章阅读信息、阅读进度、顶部搜索、代码增强、页面动画、评论 RSS、首页摘要长度和归档数量。
 
-首次启用主题时，会自动从 Typecho 基本设置和首个管理员资料导入站点标题、站点描述、昵称、用户名、个人主页、个人简介和已保存的头像地址；已有主题配置不会被覆盖。自定义主题色使用后台原生颜色选择器，勾选开关后生效，关闭即可恢复预设色。
+首次启用主题时，会自动从 Typecho 基本设置和首个管理员资料导入站点标题、站点描述、昵称、用户名、个人主页、个人简介和已保存的头像地址；已有主题配置不会被覆盖。所有主题行为开关都在后台配置页提供图形化选项，不需要修改主题文件。自定义主题色使用后台原生颜色选择器，勾选开关后生效，关闭即可恢复预设色。
 
 Cookie 域名留空时只在当前主机生效；只有在明确需要多个可信子域共享主题状态时才填写父域。图片字段支持 HTTP(S) 地址；头像留空显示中性主题标识，横幅和文章封面留空时不显示。统计默认关闭；启用时执行 `deploy/create-suite-stats.sql`，并根据实际表前缀替换 `typecho_`。
 
@@ -118,7 +118,7 @@ Cookie 域名留空时只在当前主机生效；只有在明确需要多个可�
 
 [](#suitesearch)
 
-按需执行 `deploy/create-suite-search.sql`。启用插件后，直接在后台设置页填写 Meilisearch 地址、各类 API Key、索引名称、自动同步和 LIKE 降级开关。留空地址或关闭 Meilisearch 即可只使用 MySQL 搜索。
+按需执行 `deploy/create-suite-search.sql`。启用插件后，直接在后台设置页填写 Meilisearch 地址、各类 API Key、索引名称、自动同步和 LIKE 降级开关。留空地址或关闭 Meilisearch 即可只使用 MySQL 搜索。密码框留空表示保留已有密钥，只有输入新值才会替换；需要移除密钥时勾选“清除已保存的 API Key”。
 
 旧版本仍支持站点根目录之外的 `/etc/typecho-suite/search.env` 和 `TYPECHO_SUITE_SEARCH_CONFIG`，仅作为后台设置不存在时的兼容回退：
 
@@ -135,11 +135,11 @@ MEILI_INDEX_LIVE=posts_live
 
 [](#suitemonitor)
 
-先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期。将 `monitor-collect.sh`、`monitor-prune.sh`、`suite-monitor-config.php` 安装在 Web 根目录之外，再按实际安装路径调整 `deploy/monitor.cron`；采集器会优先读取后台设置。
+先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期，并选择面板默认时间范围、自动刷新频率和默认主题。将 `monitor-collect.sh`、`monitor-prune.sh`、`suite-monitor-config.php` 安装在 Web 根目录之外，再按实际安装路径调整 `deploy/monitor.cron`；采集器会优先读取后台设置。
 
-旧版 `/etc/typecho-suite/monitor.env` 仍可作为升级期间的兼容回退，新安装无需手工编辑。密码不会写入状态快照或日志。
+旧版 `/etc/typecho-suite/monitor.env` 仍可作为升级期间的兼容回退，新安装无需手工编辑。后台密码框留空表示保留已有密码，勾选密码管理中的清除选项才会移除；密码不会写入状态快照或日志。
 
-`SITE_TARGETS` 使用空格分隔的 `key=host:port`，例如 `blog=blog.example.com:80 docs=docs.example.com:80`。在插件配置中填写同名目标的显示名称和可选公开链接。服务、主机、路径、保留天数、Cookie、监控 DSN、表前缀和 CPU 核数均可在后台修改；监控面板仅允许管理员访问。
+`SITE_TARGETS` 使用空格分隔的 `key=host:port`，例如 `blog=blog.example.com:80 docs=docs.example.com:80`。显示名称、公开链接和服务名称使用“一行一个 `key=值`”填写，不需要编写 JSON；旧版本保存的 JSON 仍可继续读取。服务、主机、路径、保留天数、Cookie、监控 DSN、表前缀和 CPU 核数均可在后台修改；监控面板仅允许管理员访问。
 
 已存在旧版监控库时，先执行一次 `deploy/create-monitor-rollups.sql`，它会补建 `swap_total` 字段并重算汇总数据；新安装只需执行 `create-suite-monitor.sql`。只有在已安装 `create-suite-stats.sql`，且监控只读账号被授予对应 Typecho 数据库访问权限后，才开启面板里的匿名访问统计。
 

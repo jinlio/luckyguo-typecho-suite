@@ -44,7 +44,7 @@ class Plugin implements PluginInterface
         $base = rtrim((string) $options->pluginUrl('SuiteAdmin'), '/') . '/';
         $config = json_encode(['name' => $cookieName, 'domain' => $cookieDomain, 'defaultTheme' => $defaultTheme], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         return $header
-            . "\n" . '<script>window.SuiteAdminThemeConfig=' . $config . ';(function(){var c=window.SuiteAdminThemeConfig,m=document.cookie.match(new RegExp("(?:^|;\\\\s*)"+c.name+"=(dark|light)(?:;|$)")),t=m?m[1]:localStorage.getItem(c.name)||((matchMedia("(prefers-color-scheme:dark)").matches)?"dark":"light");document.documentElement.dataset.theme=t;})();</script>'
+            . "\n" . '<script>window.SuiteAdminThemeConfig=' . $config . ';(function(){var c=window.SuiteAdminThemeConfig,m=document.cookie.match(new RegExp("(?:^|;\\\\s*)"+c.name+"=(dark|light)(?:;|$)")),saved="";try{saved=localStorage.getItem(c.name)||"";}catch(e){}var t=m?m[1]:saved||((matchMedia("(prefers-color-scheme:dark)").matches)?"dark":"light");if(!m&&!saved&&(c.defaultTheme==="dark"||c.defaultTheme==="light"))t=c.defaultTheme;document.documentElement.dataset.theme=t;})();</script>'
             . "\n" . '<link rel="stylesheet" href="' . $base . 'admin.css?v=1.3.9">'
             . "\n" . '<script src="' . $base . 'admin.js?v=1.3.9" defer></script>';
     }

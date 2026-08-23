@@ -18,6 +18,13 @@ function themeConfig($form)
     $form->addInput($text('aboutFocus', '关于页方向', '按你的实际方向填写'));
     $form->addInput($text('aboutStack', '关于页技术栈', '按你的实际技术栈填写'));
     $form->addInput($text('aboutStatus', '关于页状态', '持续学习与构建'));
+    $form->addInput($text('homeEyebrow', '首页眉题', 'JOURNAL / PERSONAL SPACE'));
+    $form->addInput($text('homeSignature', '首页签名', 'LEARN · BUILD · LIVE'));
+    $form->addInput($text('homeSignatureNote', '首页签名说明', '慢慢写，也认真生活。'));
+    $form->addInput($text('postListTitle', '文章列表标题', '最新记录'));
+    $form->addInput($text('postListLabel', '文章列表英文标签', 'RECENT WRITING'));
+    $form->addInput($text('articleAuthorLabel', '文章作者标签', 'WRITTEN BY'));
+    $form->addInput($text('articleTocLabel', '文章目录标签', 'ON THIS PAGE'));
 
     $bio = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'bio',
@@ -97,6 +104,54 @@ function themeConfig($form)
         '1000',
         _t('归档最多加载文章数')
     ));
+    $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
+        'pageWidth',
+        ['960' => '窄（960px）', '1120' => '标准（1120px）', '1280' => '宽（1280px）'],
+        '1120',
+        _t('页面内容宽度')
+    ));
+    $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
+        'readingWidth',
+        ['640' => '紧凑（640px）', '740' => '标准（740px）', '840' => '宽松（840px）'],
+        '740',
+        _t('文章正文宽度')
+    ));
+    $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
+        'readingSpeed',
+        ['300' => '慢（300 字/分钟）', '480' => '标准（480 字/分钟）', '600' => '快（600 字/分钟）'],
+        '480',
+        _t('预计阅读速度')
+    ));
+    $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
+        'tocDepth',
+        ['h2' => '仅显示二级标题', 'h2-h3' => '显示二级和三级标题'],
+        'h2-h3',
+        _t('文章目录层级')
+    ));
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'showSearch',
+        ['1' => _t('显示顶部搜索入口')],
+        ['1'],
+        _t('搜索入口')
+    ))->multiMode());
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'showReadingProgress',
+        ['1' => _t('显示文章阅读进度条')],
+        ['1'],
+        _t('阅读进度')
+    ))->multiMode());
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'showCodeEnhancements',
+        ['1' => _t('启用代码高亮、复制和行号')],
+        ['1'],
+        _t('代码增强')
+    ))->multiMode());
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'enableMotion',
+        ['1' => _t('启用页面过渡和滚动动画（访客仍可按系统设置减少动画）')],
+        ['1'],
+        _t('页面动画')
+    ))->multiMode());
     $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
         'enableStats',
         ['1' => _t('启用匿名访问统计（需要 suite_* 数据表）')],
@@ -175,6 +230,13 @@ function suite_custom_accent_style($options): string
         . ';--accent-strong:' . $lightStrong . ';--accent-soft:' . $lightSoft
         . '}html[data-theme="dark"] body.suite-custom-accent{--accent:' . $darkBase
         . ';--accent-strong:' . $darkStrong . ';--accent-soft:' . $darkSoft . '}</style>';
+}
+
+function suite_layout_style($options): string
+{
+    $page = suite_int_option($options, 'pageWidth', 1120, 960, 1280);
+    $reading = suite_int_option($options, 'readingWidth', 740, 640, 840);
+    return '<style id="suite-layout-settings">:root{--page:' . $page . 'px;--reading:' . $reading . 'px}</style>';
 }
 
 function suite_import_default_profile(array &$settings, bool $isInit): bool

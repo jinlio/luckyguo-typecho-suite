@@ -15,12 +15,39 @@ $monitorValue = static function (string $name, string $fallback) use ($monitorSe
     $value = trim((string) ($monitorSettings->$name ?? ''));
     return $value !== '' ? $value : $fallback;
 };
-$siteLabelsJson = json_decode((string) ($monitorSettings->siteLabels ?? ''), true);
-$configuredSiteLabels = is_array($siteLabelsJson) ? $siteLabelsJson : [];
-$siteUrlsJson = json_decode((string) ($monitorSettings->siteUrls ?? ''), true);
-$configuredSiteUrls = is_array($siteUrlsJson) ? $siteUrlsJson : [];
-$serviceLabelsJson = json_decode((string) ($monitorSettings->serviceLabels ?? ''), true);
-$configuredServiceLabels = is_array($serviceLabelsJson) ? $serviceLabelsJson : [];
+$monParseMap = static function ($raw): array {
+    $raw = trim((string) $raw);
+    if ($raw === '') {
+        return [];
+    }
+    $json = json_decode($raw, true);
+    if (is_array($json)) {
+        return $json;
+    }
+    $map = [];
+    foreach (preg_split('/\R/u', $raw) as $line) {
+        $line = trim($line);
+        $separator = strpos($line, '=');
+        if ($separator === false) {
+            continue;
+        }
+        $key = trim(substr($line, 0, $separator));
+        $value = trim(substr($line, $separator + 1));
+        if ($key !== '' && $value !== '') {
+            $map[$key] = $value;
+        }
+    }
+    return $map;
+};
+$configuredSiteLabels = $monParseMap($monitorSettings->siteLabels ?? '');
+$configuredSiteUrls = $monParseMap($monitorSettings->siteUrls ?? '');
+$configuredServiceLabels = $monParseMap($monitorSettings->serviceLabels ?? '');
+$configuredRange = trim((string) ($monitorSettings->defaultRange ?? '24h'));
+$defaultRange = in_array($configuredRange, ['24h', '7d', '30d', '1y'], true) ? $configuredRange : '24h';
+$refreshSeconds = (int) ($monitorSettings->refreshSeconds ?? 30);
+$refreshSeconds = in_array($refreshSeconds, [0, 30, 60, 300], true) ? $refreshSeconds : 30;
+$defaultTheme = trim((string) ($monitorSettings->defaultTheme ?? 'system'));
+$defaultTheme = in_array($defaultTheme, ['system', 'light', 'dark'], true) ? $defaultTheme : 'system';
 define('MON_STATUS_FILE', $monitorValue('statusFile', '/var/lib/typecho-suite/monitor/status.json'));
 define('MON_ENV_FILE', $monitorValue('envFile', '/etc/typecho-suite/monitor.env'));
 define('MON_DB_DSN', $monitorValue('databaseDsn', 'mysql:host=127.0.0.1;dbname=monitor;charset=utf8mb4'));
@@ -101,7 +128,7 @@ function mon_db_row(?PDO $pdo, string $label, string $sql): array {
 }
 
 $RANGES = ['24h' => '24 小时', '7d' => '7 天', '30d' => '30 天', '1y' => '1 年'];
-$range = (string)($_GET['range'] ?? '24h');
+$range = (string)($_GET['range'] ?? $defaultRange);
 if (!isset($RANGES[$range])) $range = '24h';
 
 // ---------- SVG 图表助手 ----------
@@ -399,7 +426,7 @@ $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_tota
 <meta name="theme-color" content="<?= (($_COOKIE[MON_COOKIE_NAME] ?? '') === 'dark') ? '#1c191d' : '#fcfafb' ?>">
 <meta name="robots" content="noindex, nofollow">
 <title>站点状态 · Typecho Suite</title>
-<script>window.SuiteMonitorThemeConfig=<?= json_encode(['name' => MON_COOKIE_NAME, 'domain' => MON_COOKIE_DOMAIN], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;(function(){var c=window.SuiteMonitorThemeConfig,m=document.cookie.match(new RegExp('(?:^|;\\s*)'+c.name+'=(dark|light)(?:;|$)')),t=m?m[1]:localStorage.getItem(c.name)||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t;})();</script>
+<script>window.SuiteMonitorThemeConfig=<?= json_encode(['name' => MON_COOKIE_NAME, 'domain' => MON_COOKIE_DOMAIN, 'defaultTheme' => $defaultTheme], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;(function(){var c=window.SuiteMonitorThemeConfig,m=document.cookie.match(new RegExp('(?:^|;\\s*)'+c.name+'=(dark|light)(?:;|$)')),saved='';try{saved=localStorage.getItem(c.name)||'';}catch(e){}var t=m?m[1]:saved||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');if(!m&&!saved&&(c.defaultTheme==='dark'||c.defaultTheme==='light'))t=c.defaultTheme;document.documentElement.dataset.theme=t;})();</script>
 <link rel="stylesheet" href="<?= mon_e($monitorPluginUrl . '/style.css?v=2.0.0') ?>">
 </head>
 <body>
@@ -580,7 +607,7 @@ $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_tota
 (function(){
   var root=document.documentElement,toggle=document.querySelector('.theme-toggle');
   var tc=window.SuiteMonitorThemeConfig||{name:'suite-theme',domain:''};
-  var save=function(t){localStorage.setItem(tc.name,t);document.cookie=tc.name+'='+t+'; Max-Age=31536000; Path=/'+(tc.domain?'; Domain='+tc.domain:'')+'; SameSite=Lax; Secure';};
+  var save=function(t){try{localStorage.setItem(tc.name,t);}catch(e){}document.cookie=tc.name+'='+t+'; Max-Age=31536000; Path=/'+(tc.domain?'; Domain='+tc.domain:'')+'; SameSite=Lax; Secure';};
   var color=function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',root.dataset.theme==='dark'?'#1c191d':'#fcfafb');};
   var styleTimer=0,animationTimer=0;
   if(toggle)toggle.addEventListener('click',function(){var t=root.dataset.theme==='dark'?'light':'dark';root.classList.add('theme-switching');void root.offsetWidth;toggle.classList.remove('is-rotating');void toggle.offsetWidth;toggle.classList.add('is-rotating');root.dataset.theme=t;save(t);color();clearTimeout(styleTimer);clearTimeout(animationTimer);styleTimer=setTimeout(function(){root.classList.remove('theme-switching');},280);animationTimer=setTimeout(function(){toggle.classList.remove('is-rotating');},700);});
@@ -602,7 +629,7 @@ $diskLabel = (int)($S['disk_total_mb'] ?? 0) > 0 ? mon_fnum((float)$S['disk_tota
     if(d.services)for(var k in d.services){var dot=document.querySelector('[data-svc="'+k+'"]');var st=document.querySelector('[data-svc-t="'+k+'"]');var ok=d.services[k]==='active';if(dot){dot.classList.remove('ok','bad');dot.classList.add(ok?'ok':'bad');}if(st)st.textContent=d.services[k];}
     if(d.sites)for(var s in d.sites){var c=d.sites[s].code,ok2=c>=200&&c<400;var cd=document.querySelector('[data-site-code="'+s+'"]');if(cd){cd.textContent=c||'—';cd.classList.remove('ok','bad');cd.classList.add(ok2?'ok':'bad');}var tt=document.querySelector('[data-site-ttfb="'+s+'"]');if(tt)tt.textContent=d.sites[s].ttfb_ms;var sd=document.querySelector('[data-site-dot="'+s+'"]');if(sd){sd.classList.remove('ok','bad');sd.classList.add(ok2?'ok':'bad');}}
   }).catch(function(){});};
-  setInterval(poll,30000);
+  <?php if ($refreshSeconds > 0): ?>setInterval(poll,<?= $refreshSeconds * 1000 ?>);<?php endif; ?>
 })();
 </script>
 </body>

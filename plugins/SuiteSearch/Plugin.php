@@ -60,6 +60,9 @@ final class Plugin implements PluginInterface
         $form->addInput(new \Typecho\Widget\Helper\Form\Element\Password(
             'taskKey', null, '', _t('任务查询 API Key（留空使用重建 API Key）')
         ));
+        $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+            'clearKeys', ['1' => _t('清除已保存的 API Key（谨慎操作）')], [], _t('密钥管理')
+        ))->multiMode());
         $form->addInput(new \Typecho\Widget\Helper\Form\Element\Text(
             'liveIndex', null, 'posts_live', _t('在线索引名称')
         ));
@@ -79,6 +82,32 @@ final class Plugin implements PluginInterface
 
     public static function personalConfig(\Typecho\Widget\Helper\Form $form): void
     {
+    }
+
+    /**
+     * Password fields are intentionally blank in the form. Preserve saved
+     * credentials when an administrator changes unrelated settings.
+     */
+    public static function configHandle(array $settings, bool $isInit): void
+    {
+        $current = \Widget\Options::alloc()->plugin('SuiteSearch');
+        $secretFields = ['searchKey', 'writeKey', 'rebuildKey', 'taskKey'];
+        $clear = is_array($settings['clearKeys'] ?? null)
+            ? in_array('1', array_map('strval', $settings['clearKeys']), true)
+            : (string) ($settings['clearKeys'] ?? '') === '1';
+        unset($settings['clearKeys']);
+        foreach ($secretFields as $field) {
+            if ($clear) {
+                $settings[$field] = '';
+                continue;
+            }
+            if (array_key_exists($field, $settings)
+                && trim((string) $settings[$field]) === ''
+                && trim((string) ($current->$field ?? '')) !== '') {
+                unset($settings[$field]);
+            }
+        }
+        \Widget\Plugins\Edit::configPlugin('SuiteSearch', $settings);
     }
 
     public static function search(?string $keywords, \Widget\Archive $archive): void

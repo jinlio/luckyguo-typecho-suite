@@ -4,11 +4,12 @@ $this->need('header.php');
 suite_record_view((int) $this->cid, $this->options);
 $readingText = trim(strip_tags((string) $this->text));
 $readingUnits = preg_match_all('/[\p{Han}]|[A-Za-z0-9]+/u', $readingText, $readingMatches);
-$readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / 480));
+$readingSpeed = suite_int_option($this->options, 'readingSpeed', 480, 100, 1000);
+$readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / $readingSpeed));
 ?>
 <main class="article-shell">
     <a class="back-link" href="<?php $this->options->siteUrl(); ?>">← 返回文章列表</a>
-    <article class="article" itemscope itemtype="https://schema.org/BlogPosting">
+    <article class="article" data-reading-progress="<?php echo suite_flag($this->options, 'showReadingProgress', true) ? 'on' : 'off'; ?>" itemscope itemtype="https://schema.org/BlogPosting">
         <header class="article-header">
             <div class="post-kicker"><?php $this->category(' / ', true, '未分类'); ?></div>
             <h1 itemprop="headline"><?php $this->title(); ?></h1>
@@ -26,13 +27,13 @@ $readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / 480));
         <div class="article-layout">
             <div class="article-content" itemprop="articleBody"><?php $this->content(); ?></div>
             <aside class="article-aside">
-                <p>WRITTEN BY</p>
+                <p><?php echo htmlspecialchars(suite_option($this->options, 'articleAuthorLabel', 'WRITTEN BY'), ENT_QUOTES, 'UTF-8'); ?></p>
                 <?php echo suite_avatar_markup($this->options); ?>
                 <strong><?php echo htmlspecialchars(suite_option($this->options, 'authorName', '站点作者'), ENT_QUOTES, 'UTF-8'); ?></strong>
                 <span><?php echo htmlspecialchars(suite_option($this->options, 'authorHandle', 'author'), ENT_QUOTES, 'UTF-8'); ?></span>
                 <?php if (suite_flag($this->options, 'showArticleToc', true)): ?>
-                <nav class="article-toc" aria-label="文章目录">
-                    <p>ON THIS PAGE</p>
+                <nav class="article-toc" data-toc-depth="<?php echo suite_option($this->options, 'tocDepth', 'h2-h3') === 'h2' ? 'h2' : 'h2-h3'; ?>" aria-label="文章目录">
+                    <p><?php echo htmlspecialchars(suite_option($this->options, 'articleTocLabel', 'ON THIS PAGE'), ENT_QUOTES, 'UTF-8'); ?></p>
                     <ol></ol>
                 </nav>
                 <?php endif; ?>

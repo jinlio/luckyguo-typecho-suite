@@ -6,10 +6,12 @@
   let themeStyleTimer = 0;
   let themeAnimationTimer = 0;
   const themeConfig = window.SuiteThemeConfig || { name: 'suite-theme', domain: '' };
+  const motionEnabled = themeConfig.motion !== 'off';
+  const reducedMotion = () => !motionEnabled || motionQuery.matches;
   const cookieName = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(themeConfig.name) ? themeConfig.name : 'suite-theme';
   const cookieDomain = typeof themeConfig.domain === 'string' && /^[.]?[A-Za-z0-9.-]+$/.test(themeConfig.domain) ? themeConfig.domain : '';
   const saveTheme = (theme) => {
-    localStorage.setItem(cookieName, theme);
+    try { localStorage.setItem(cookieName, theme); } catch (e) {}
     document.cookie = `${cookieName}=${theme}; Max-Age=31536000; Path=/${cookieDomain ? `; Domain=${cookieDomain}` : ''}; SameSite=Lax; Secure`;
   };
   themeToggle?.addEventListener('animationend', (event) => {
@@ -108,7 +110,7 @@
   };
   addEventListener('pageshow', () => root.classList.remove('page-leaving'));
   document.addEventListener('click', (event) => {
-    if (motionQuery.matches || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (reducedMotion() || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const link = event.target.closest('a[href]');
     if (!link || link.target || link.hasAttribute('download')) return;
     const target = new URL(link.href, location.href);
@@ -118,14 +120,14 @@
     beginNavigation(target.href);
   });
   searchBar?.addEventListener('submit', (event) => {
-    if (motionQuery.matches || event.defaultPrevented) return;
+    if (reducedMotion() || event.defaultPrevented) return;
     event.preventDefault();
     root.classList.add('page-leaving');
     setTimeout(() => HTMLFormElement.prototype.submit.call(searchBar), 230);
   });
 
   const header = document.querySelector('.site-header');
-  const article = document.querySelector('.article:not([data-reading-progress="off"])');
+  const article = document.querySelector('.article[data-reading-progress="on"]');
   let readingProgress;
   if (header && article) {
     readingProgress = document.createElement('span');
@@ -139,7 +141,7 @@
   const articleLayout = document.querySelector('.article-layout');
   const articleAside = document.querySelector('.article-aside');
   if (articleContent && articleToc && articleLayout && articleAside) {
-    const headings = [...articleContent.querySelectorAll('h2, h3')];
+    const headings = [...articleContent.querySelectorAll(articleToc.dataset.tocDepth === 'h2' ? 'h2' : 'h2, h3')];
     if (!headings.length) {
       articleToc.hidden = true;
     } else {
@@ -206,7 +208,7 @@
         }
       };
       setActiveToc(headings[0]);
-      if (!motionQuery.matches && 'IntersectionObserver' in window) {
+      if (!reducedMotion() && 'IntersectionObserver' in window) {
         const tocObserver = new IntersectionObserver((entries) => {
           const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
           if (visible[0]) setActiveToc(visible[0].target);
@@ -255,7 +257,7 @@
   refreshScrollMetrics();
   updateScrollState();
 
-  if (!motionQuery.matches && 'IntersectionObserver' in window) {
+  if (!reducedMotion() && 'IntersectionObserver' in window) {
     const revealElement = (element) => {
       element.classList.add('is-visible');
       const delay = Number.parseInt(element.style.getPropertyValue('--reveal-delay'), 10) || 0;

@@ -74,6 +74,9 @@ class Plugin implements PluginInterface
         $form->addInput(new Form\Element\Password(
             'monitorRoPass', null, '', _t('监控面板只读数据库密码（可选）')
         ));
+        $form->addInput((new Form\Element\Checkbox(
+            'clearPasswords', ['1' => _t('清除已保存的数据库密码（谨慎操作）')], [], _t('密码管理')
+        ))->multiMode());
         $form->addInput(new Form\Element\Text(
             'typechoDatabase', null, 'typecho', _t('Typecho 数据库名（统计关联）')
         ));
@@ -105,13 +108,13 @@ class Plugin implements PluginInterface
             'rollupRetentionDays', null, '400', _t('汇总监控数据保留天数')
         ));
         $form->addInput(new Form\Element\Textarea(
-            'siteLabels', null, '{"blog":"主站","docs":"文档"}', _t('监测目标显示名称 JSON（可选）')
+            'siteLabels', null, "blog=主站\ndocs=文档", _t('监测目标显示名称（每行填写 key=名称，可选）')
         ));
         $form->addInput(new Form\Element\Textarea(
-            'siteUrls', null, '{"blog":"https://blog.example.com","docs":"https://docs.example.com"}', _t('监测目标链接 JSON（可选）')
+            'siteUrls', null, "blog=https://blog.example.com\ndocs=https://docs.example.com", _t('监测目标链接（每行填写 key=网址，可选）')
         ));
         $form->addInput(new Form\Element\Textarea(
-            'serviceLabels', null, '{"nginx":"Nginx","php-fpm":"PHP-FPM","mysqld":"MySQL"}', _t('服务显示名称 JSON（可选）')
+            'serviceLabels', null, "nginx=Nginx\nphp-fpm=PHP-FPM\nmysqld=MySQL", _t('服务显示名称（每行填写服务名=显示名称，可选）')
         ));
         $form->addInput(new Form\Element\Text(
             'cookieName', null, 'suite-theme', _t('主题偏好 Cookie 名称')
@@ -125,9 +128,50 @@ class Plugin implements PluginInterface
             [],
             _t('博客访问统计')
         ))->multiMode());
+        $form->addInput(new Form\Element\Select(
+            'defaultRange',
+            ['24h' => _t('24 小时'), '7d' => _t('7 天'), '30d' => _t('30 天'), '1y' => _t('1 年')],
+            '24h',
+            _t('监控面板默认时间范围')
+        ));
+        $form->addInput(new Form\Element\Select(
+            'refreshSeconds',
+            ['0' => _t('关闭自动刷新'), '30' => _t('每 30 秒'), '60' => _t('每 1 分钟'), '300' => _t('每 5 分钟')],
+            '30',
+            _t('监控面板自动刷新')
+        ));
+        $form->addInput(new Form\Element\Select(
+            'defaultTheme',
+            ['system' => _t('跟随系统'), 'light' => _t('默认浅色'), 'dark' => _t('默认深色')],
+            'system',
+            _t('监控面板默认主题')
+        ));
     }
 
     public static function personalConfig(Form $form)
     {
+    }
+
+    /** Keep existing database passwords when their blank form fields are left unchanged. */
+    public static function configHandle(array $settings, bool $isInit): void
+    {
+        $current = \Widget\Options::alloc()->plugin('SuiteMonitor');
+        $secretFields = ['monitorRwPass', 'monitorRoPass'];
+        $clear = is_array($settings['clearPasswords'] ?? null)
+            ? in_array('1', array_map('strval', $settings['clearPasswords']), true)
+            : (string) ($settings['clearPasswords'] ?? '') === '1';
+        unset($settings['clearPasswords']);
+        foreach ($secretFields as $field) {
+            if ($clear) {
+                $settings[$field] = '';
+                continue;
+            }
+            if (array_key_exists($field, $settings)
+                && trim((string) $settings[$field]) === ''
+                && trim((string) ($current->$field ?? '')) !== '') {
+                unset($settings[$field]);
+            }
+        }
+        \Widget\Plugins\Edit::configPlugin('SuiteMonitor', $settings);
     }
 }

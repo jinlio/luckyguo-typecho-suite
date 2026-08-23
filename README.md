@@ -90,9 +90,9 @@ Select `suite-default` in Typecho Appearance and fill in its settings. To add av
 
 [](#theme-configuration)
 
-The settings page controls site name, author name and handle, tagline, biography, avatar, homepage banner, article cover, homepage/code links, preset or custom accent color, cookie name/domain, default light/dark mode, uptime start time, statistics switch, homepage auxiliary modules, article table of contents, reading metadata, comment RSS, excerpt length, archive limit, and counter bucket count.
+The settings page controls site name, author name and handle, tagline, biography, homepage eyebrow/signature/list labels, article author and TOC labels, avatar, homepage banner, article cover, homepage/code links, preset or custom accent color, cookie name/domain, default light/dark mode, page and reading widths, reading speed, uptime start time, statistics switch, homepage auxiliary modules, table-of-contents depth, reading metadata, reading progress, search entry, code enhancements, page motion, comment RSS, excerpt length, archive limit, and counter bucket count.
 
-On first activation, the theme imports the Typecho site title and description plus the first administrator's display name, username, homepage, personal bio, and saved avatar URL. Existing theme settings are never overwritten. Custom accent colors use the native color picker and take effect only when the custom-color switch is enabled; disabling it restores the preset palette.
+On first activation, the theme imports the Typecho site title and description plus the first administrator's display name, username, homepage, personal bio, and saved avatar URL. Existing theme settings are never overwritten. All theme behavior switches are graphical settings; users do not need to edit theme files. Custom accent colors use the native color picker and take effect only when the custom-color switch is enabled; disabling it restores the preset palette.
 
 Leave the cookie domain empty for a host-only preference. Set it only when trusted subdomains need to share it. Image fields accept HTTP(S) URLs; a missing avatar shows a neutral theme mark, while a missing banner or article cover is omitted. Statistics are disabled by default and require `deploy/create-suite-stats.sql`.
 
@@ -116,7 +116,7 @@ Enable `Sitemap`, choose content types, and validate with `curl -fsS https://blo
 
 [](#suitesearch)
 
-Install `deploy/create-suite-search.sql`, enable SuiteSearch, and fill in the Meilisearch URL, API keys, index names, automatic sync, and LIKE fallback switches in the plugin settings page. Leave the URL empty or disable Meilisearch to use MySQL search only.
+Install `deploy/create-suite-search.sql`, enable SuiteSearch, and fill in the Meilisearch URL, API keys, index names, automatic sync, and LIKE fallback switches in the plugin settings page. A blank password field keeps the existing key; enter a new value only when rotating credentials, or use the clear-keys checkbox to remove saved keys. Leave the URL empty or disable Meilisearch to use MySQL search only.
 
 The legacy environment file remains supported as a fallback when backend settings have never been saved:
 
@@ -131,11 +131,11 @@ Set `TYPECHO_SUITE_SEARCH_CONFIG` for another path. Without valid Meilisearch co
 
 [](#suitemonitor)
 
-Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Configure the status path, log path, database credentials, service units, site probes, and retention periods in the SuiteMonitor settings page. Install `monitor-collect.sh`, `monitor-prune.sh`, and `suite-monitor-config.php` outside the web root, then adapt `deploy/monitor.cron` to the installed paths. The collector exports saved backend settings at runtime.
+Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Configure the status path, log path, database credentials, service units, site probes, retention periods, default range, refresh interval, and default theme in the SuiteMonitor settings page. Install `monitor-collect.sh`, `monitor-prune.sh`, and `suite-monitor-config.php` outside the web root, then adapt `deploy/monitor.cron` to the installed paths. The collector exports saved backend settings at runtime.
 
-The legacy `/etc/typecho-suite/monitor.env` remains a compatibility fallback during upgrades; new installations do not need to edit it. Passwords are never written to the status snapshot.
+The legacy `/etc/typecho-suite/monitor.env` remains a compatibility fallback during upgrades; new installations do not need to edit it. Blank backend password fields preserve existing passwords; use the password-management clear option to remove them. Passwords are never written to the status snapshot.
 
-`SITE_TARGETS` accepts space-separated `key=host:port` entries, such as `blog=blog.example.com:80 docs=docs.example.com:80`. Configure matching labels and optional public URLs in the plugin settings. The panel is administrator-only; monitored services, hosts, paths, retention values, cookie settings, database DSN, table prefix, and CPU core count are all editable in the backend.
+`SITE_TARGETS` accepts space-separated `key=host:port` entries, such as `blog=blog.example.com:80 docs=docs.example.com:80`. Enter display labels, public URLs, and service labels as one `key=value` per line; JSON saved by older versions remains supported. The panel is administrator-only; monitored services, hosts, paths, retention values, cookie settings, database DSN, table prefix, and CPU core count are all editable in the backend.
 
 For an existing monitor database created by an earlier Suite version, run `deploy/create-monitor-rollups.sql` once before the new collector. It adds `swap_total` and recomputes rollups. New installations must use only `create-suite-monitor.sql`. Enable the panel's anonymous-statistics option only after `create-suite-stats.sql` has been installed and the monitor read-only account has access to the selected Typecho database.
 
