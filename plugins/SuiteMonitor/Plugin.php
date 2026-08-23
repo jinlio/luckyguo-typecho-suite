@@ -41,13 +41,13 @@ class Plugin implements PluginInterface
     public static function config(Form $form)
     {
         $form->addInput(new Form\Element\Text(
-            'brandName', null, '', _t('监控站点名称（留空继承主题站点名称）')
+            'brandName', null, '', _t('监控品牌名称（你的站点名称；留空继承主题站点名称）')
         ));
         $form->addInput(new Form\Element\Text(
-            'brandHandle', null, '', _t('监控站点标识（留空继承主题作者标识）')
+            'brandHandle', null, '', _t('监控品牌标识（你的昵称或用户名；留空继承主题作者标识）')
         ));
         $brandAvatar = new Form\Element\Text(
-            'brandAvatarUrl', null, '', _t('监控头像地址（留空继承主题头像）')
+            'brandAvatarUrl', null, '', _t('监控品牌头像地址（你的头像 HTTP(S) 地址；留空继承主题头像）')
         );
         $brandAvatar->addRule('url', _t('请输入有效的 HTTP(S) 地址'));
         $form->addInput($brandAvatar);
@@ -130,7 +130,7 @@ class Plugin implements PluginInterface
             'siteUrls', null, "blog=https://blog.example.com\ndocs=https://docs.example.com", _t('监测目标链接（每行填写 key=网址，可选）')
         ));
         $form->addInput(new Form\Element\Textarea(
-            'navItems', null, "console=控制台|admin\nhome=首页|site\nlanding=落地页|landing", _t('监控顶部导航（每行填写 key=名称|目标；目标可填 admin、site、已配置站点 key 或 HTTP(S) 地址）')
+            'navItems', null, "console=控制台|admin\nhome=首页|site\nlanding=落地页|landing", _t('监控顶部导航（默认：控制台、首页、落地页；每行填写 key=名称|目标，可自定义）')
         ));
         $footerRepo = new Form\Element\Text(
             'footerRepoUrl', null, '', _t('页脚代码仓库地址（留空隐藏）')

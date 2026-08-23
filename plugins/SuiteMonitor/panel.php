@@ -815,12 +815,16 @@ $monitorChecks = [
             <div><p class="eyebrow">LOGS</p><h2>24 小时异常日志</h2></div>
             <span class="hint">文件日志与站点探测失败<?php if ($logFreshStale): ?> · <span id="log-fresh" class="log-fresh stale">采集可能异常</span><?php else: ?><span id="log-fresh" class="log-fresh"></span><?php endif; ?></span>
         </header>
-        <div class="panel">
-            <div class="log-filters" role="tablist" aria-label="日志级别筛选">
+        <div class="panel log-panel">
+            <div class="log-toolbar">
+                <span class="log-total"><b><?= $logCounts['all'] ?></b> 条事件</span>
+                <div class="log-filters" role="tablist" aria-label="日志级别筛选">
                 <button type="button" class="log-filter cur" data-lf="all" role="tab" aria-selected="true">全部 <b><?= $logCounts['all'] ?></b></button>
                 <button type="button" class="log-filter" data-lf="error" role="tab" aria-selected="false">错误 <b><?= $logCounts['error'] ?></b></button>
                 <button type="button" class="log-filter" data-lf="warn" role="tab" aria-selected="false">警告 <b><?= $logCounts['warn'] ?></b></button>
                 <button type="button" class="log-filter" data-lf="info" role="tab" aria-selected="false">信息 <b><?= $logCounts['info'] ?></b></button>
+                </div>
+                <span class="log-window">按时间倒序 · 自动刷新 60 秒</span>
             </div>
             <div class="log-table">
                 <div class="log-row log-head"><span>时间</span><span>来源</span><span>级别</span><span>消息</span></div>
@@ -880,7 +884,7 @@ $monitorChecks = [
     if(d.sites)for(var s in d.sites){var c=d.sites[s].code,ok2=c>=200&&c<400;var cd=document.querySelector('[data-site-code="'+s+'"]');if(cd){cd.textContent=c||'—';cd.classList.remove('ok','bad');cd.classList.add(ok2?'ok':'bad');}var tt=document.querySelector('[data-site-ttfb="'+s+'"]');if(tt)tt.textContent=d.sites[s].ttfb_ms;var sd=document.querySelector('[data-site-dot="'+s+'"]');if(sd){sd.classList.remove('ok','bad');sd.classList.add(ok2?'ok':'bad');}}
   }).catch(function(){});};
   <?php if ($refreshSeconds > 0): ?>setInterval(poll,<?= $refreshSeconds * 1000 ?>);<?php endif; ?>
-  var logFilter='all',rowsBox=document.getElementById('log-rows'),filters=document.querySelectorAll('.log-filter'),freshEl=document.getElementById('log-fresh');
+  var logFilter='all',rowsBox=document.getElementById('log-rows'),filters=document.querySelectorAll('.log-filter'),freshEl=document.getElementById('log-fresh'),logTotal=document.querySelector('.log-total b');
   var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
   var levelNames={error:'错误',warn:'警告',info:'信息'};
   var logRows=<?= json_encode($logs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
@@ -903,6 +907,7 @@ $monitorChecks = [
   });});
   var pollLogs=function(){fetch('<?= $monSelf ?>&ajaxlog=1',{cache:'no-store'}).then(function(r){return r.json();}).then(function(payload){
     logRows=payload&&Array.isArray(payload.rows)?payload.rows:[];
+    if(logTotal)logTotal.textContent=logRows.length;
     var counts={all:logRows.length,error:0,warn:0,info:0};logRows.forEach(function(r){if(counts[r.level]!==undefined)counts[r.level]++;});
     filters.forEach(function(button){var n=button.querySelector('b'),k=button.getAttribute('data-lf');if(n)n.textContent=counts[k]||0;});
     if(freshEl&&payload&&payload.collected_at){var ft=Date.parse(String(payload.collected_at).replace(' ','T')+'+08:00'),stale=!isNaN(ft)&&Date.now()-ft>150000;freshEl.textContent=stale?'采集可能异常':'';freshEl.classList.toggle('stale',stale);}

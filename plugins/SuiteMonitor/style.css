@@ -15,16 +15,21 @@
 }
 
 /* ---------- 24 小时异常日志 ---------- */
-.log-filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-.log-filter { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line); background: var(--surface-soft); color: var(--ink-soft); font-size: 12px; font-weight: 700; line-height: 1.5; transition: border-color .2s, color .2s, background-color .2s; }
+.log-panel { padding: 0; overflow: hidden; }
+.log-toolbar { display: flex; align-items: center; gap: 14px; min-height: 58px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-soft); }
+.log-total { color: var(--ink-soft); font-size: 12px; white-space: nowrap; }
+.log-total b { color: var(--ink); font-size: 18px; font-variant-numeric: tabular-nums; }
+.log-filters { display: flex; gap: 6px; margin: 0; flex-wrap: wrap; }
+.log-filter { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 11px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--ink-soft); font-size: 12px; font-weight: 700; line-height: 1.5; transition: border-color .2s, color .2s, background-color .2s; }
 .log-filter:hover { border-color: var(--accent); color: var(--ink); }
 .log-filter.cur { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
 .log-filter b { font-weight: 800; }
+.log-window { margin-left: auto; color: var(--ink-soft); font-size: 11px; white-space: nowrap; }
 .log-table { overflow-x: auto; }
 .log-row { display: grid; grid-template-columns: 128px 96px 56px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 8px 12px; font-size: 12.5px; line-height: 1.6; border-top: 1px solid var(--line); transition: background-color .15s; }
 .log-row:hover { background: var(--surface-soft); }
 .log-row:first-child { border-top: none; }
-.log-row.log-head { color: var(--ink-soft); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding-top: 4px; padding-bottom: 4px; }
+.log-row.log-head { color: var(--ink-soft); background: var(--surface-soft); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding-top: 7px; padding-bottom: 7px; }
 .log-row.log-empty { display: flex; color: var(--ink-soft); padding: 18px 12px; justify-content: center; }
 .log-t { color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .log-src { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--sage); font-size: 11.5px; }
