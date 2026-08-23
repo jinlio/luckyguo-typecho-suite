@@ -10,6 +10,8 @@
 - Fixed Typecho 1.3 output-style `pluginUrl()`/`adminUrl()` handling so SuiteAdmin assets and SuiteMonitor navigation/styles resolve to their plugin paths instead of `/admin.css` or an empty URL.
 - Suppressed warnings when an optional legacy SuiteSearch env path is outside PHP `open_basedir`; configured backend settings continue to take precedence.
 - Updated SuiteMonitor's header brand to read the active theme's site name, author handle, and avatar URL, with the generic Suite mark retained as a fallback.
+- Added SuiteMonitor GUI fields for an optional custom monitor name, handle, and avatar URL; empty fields inherit the active theme automatically. Activation now removes legacy private panel registrations before registering `SuiteMonitor/panel.php`.
+- Made SuiteMonitor activation idempotent so repeated enable/upgrade operations cannot create duplicate monitoring menu entries.
 - Updated the theme empty state, context-aware article return link, mobile navigation, platform shortcut label, and comment guidance.
 - Added the `useGravatar` theme setting and a local-first comment avatar renderer to avoid third-party requests by default.
 - Updated SuiteMonitor charts to use real timestamp X coordinates, split on sampling gaps, expose data-quality text, and refresh chart SVGs through the admin polling endpoint.

@@ -23,6 +23,11 @@ class Plugin implements PluginInterface
 {
     public static function activate()
     {
+        // Remove panel registrations from older private releases before adding
+        // the public namespace. Typecho persists panel registrations in options.
+        foreach (['SuiteMonitor/panel.php', 'Monitor/panel.php', 'LuckyguoMonitor/panel.php', 'LuckyguoStats/panel.php'] as $legacyPanel) {
+            Helper::removePanel(3, $legacyPanel);
+        }
         Helper::addPanel(3, 'SuiteMonitor/panel.php', '站点监控', '服务器与站点状态', 'administrator');
         return _t('站点监控面板已启用');
     }
@@ -35,6 +40,17 @@ class Plugin implements PluginInterface
 
     public static function config(Form $form)
     {
+        $form->addInput(new Form\Element\Text(
+            'brandName', null, '', _t('监控站点名称（留空继承主题站点名称）')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'brandHandle', null, '', _t('监控站点标识（留空继承主题作者标识）')
+        ));
+        $brandAvatar = new Form\Element\Text(
+            'brandAvatarUrl', null, '', _t('监控头像地址（留空继承主题头像）')
+        );
+        $brandAvatar->addRule('url', _t('请输入有效的 HTTP(S) 地址'));
+        $form->addInput($brandAvatar);
         $form->addInput(new Form\Element\Text(
             'statusFile', null, '/var/lib/typecho-suite/monitor/status.json', _t('状态 JSON 路径（采集器写入、面板读取）')
         ));

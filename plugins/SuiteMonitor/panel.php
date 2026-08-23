@@ -495,9 +495,14 @@ $blogUrl = (string) $monitorOptions->siteUrl;
 ob_start();
 $monitorOptions->pluginUrl('SuiteMonitor');
 $monitorPluginUrl = rtrim((string) ob_get_clean(), '/');
-$monitorBrandName = trim((string) ($monitorOptions->siteName ?? $monitorOptions->title ?? 'Typecho Suite')) ?: 'Typecho Suite';
-$monitorBrandHandle = trim((string) ($monitorOptions->authorHandle ?? 'status')) ?: 'status';
-$monitorBrandAvatar = trim((string) ($monitorOptions->avatarUrl ?? ''));
+$monitorBrandName = trim((string) ($monitorSettings->brandName ?? ''))
+    ?: trim((string) ($monitorOptions->siteName ?? $monitorOptions->title ?? 'Typecho Suite'));
+$monitorBrandName = $monitorBrandName ?: 'Typecho Suite';
+$monitorBrandHandle = trim((string) ($monitorSettings->brandHandle ?? ''))
+    ?: trim((string) ($monitorOptions->authorHandle ?? 'status'));
+$monitorBrandHandle = $monitorBrandHandle ?: 'status';
+$monitorBrandAvatar = trim((string) ($monitorSettings->brandAvatarUrl ?? ''))
+    ?: trim((string) ($monitorOptions->avatarUrl ?? ''));
 if (!preg_match('#^https?://#i', $monitorBrandAvatar)) {
     $monitorBrandAvatar = '';
 }
