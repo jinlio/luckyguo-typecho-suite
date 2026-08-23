@@ -20,13 +20,17 @@ final class SearchService
     private string $liveIndex;
     private string $prefix;
     private bool $queueAvailable = false;
+    private bool $mysqlFallback = true;
 
     private function __construct()
     {
         $this->db = Db::get();
         $configPath = getenv('TYPECHO_SUITE_SEARCH_CONFIG') ?: '/etc/typecho-suite/search.env';
         try {
-            $this->config = RuntimeConfig::fromFile($configPath);
+            $this->config = RuntimeConfig::fromOptionsOrFile(Options::alloc(), $configPath);
+            if (!$this->config->getBool('ENABLED', true)) {
+                throw new \RuntimeException('disabled in SuiteSearch settings');
+            }
             $this->searchClient = new MeiliClient(
                 $this->config->require('MEILI_URL'),
                 $this->config->require('SEARCH_KEY'),
@@ -48,6 +52,7 @@ final class SearchService
         $this->liveIndex = $this->config !== null
             ? $this->config->get('MEILI_INDEX_LIVE', 'posts_live')
             : 'posts_live';
+        $this->mysqlFallback = $this->config === null || $this->config->getBool('MYSQL_FALLBACK', true);
         $this->prefix = $this->db->getPrefix();
         if (!preg_match('/^[A-Za-z0-9_]+$/', $this->prefix)) {
             throw new \RuntimeException('Unsafe Typecho table prefix');
@@ -89,7 +94,11 @@ final class SearchService
             error_log('[SuiteSearch] Meilisearch unavailable, using LIKE: ' . $error->getMessage());
         }
 
-        $this->searchLike($keywords, $archive, $page, $pageSize);
+        if ($this->mysqlFallback) {
+            $this->searchLike($keywords, $archive, $page, $pageSize);
+        } else {
+            $archive->setTotal(0);
+        }
     }
 
     public function health(): bool
@@ -108,6 +117,10 @@ final class SearchService
     public function sync(int $cid, string $operation): void
     {
         if ($cid <= 0) {
+            return;
+        }
+
+        if ($this->config !== null && !$this->config->getBool('AUTO_SYNC', true)) {
             return;
         }
 

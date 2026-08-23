@@ -25,6 +25,72 @@ final class RuntimeConfig
         return new self($values);
     }
 
+    /**
+     * Read settings saved by the Typecho plugin configuration page.
+     * The option names intentionally stay separate from the legacy env names.
+     */
+    public static function fromOptions(object $options): self
+    {
+        $settings = $options->plugin('SuiteSearch');
+        $fields = [
+            'enabled' => 'ENABLED',
+            'meiliUrl' => 'MEILI_URL',
+            'searchKey' => 'SEARCH_KEY',
+            'writeKey' => 'WRITE_KEY',
+            'rebuildKey' => 'REBUILD_KEY',
+            'taskKey' => 'TASK_KEY',
+            'liveIndex' => 'MEILI_INDEX_LIVE',
+            'buildIndex' => 'MEILI_INDEX_BUILD',
+            'rebuildFenceTimeout' => 'REBUILD_FENCE_TIMEOUT',
+            'autoSync' => 'AUTO_SYNC',
+            'mysqlFallback' => 'MYSQL_FALLBACK',
+        ];
+        $values = [];
+        $hasSettings = false;
+        foreach ($fields as $field => $name) {
+            $value = $settings->$field ?? null;
+            if ($value !== null) {
+                $hasSettings = true;
+                if (is_array($value)) {
+                    $value = in_array('1', array_map('strval', $value), true) ? '1' : '0';
+                }
+                $values[$name] = (string) $value;
+            }
+        }
+        if (!$hasSettings) {
+            throw new \RuntimeException('SuiteSearch backend settings are not saved');
+        }
+        if (!array_key_exists('ENABLED', $values)) {
+            $values['ENABLED'] = '0';
+        }
+        return new self($values);
+    }
+
+    public static function fromOptionsOrFile(object $options, string $path): self
+    {
+        try {
+            $configured = self::fromOptions($options);
+            if (is_readable($path)) {
+                $legacy = self::fromFile($path);
+                return $configured->withFallback($legacy);
+            }
+            return $configured;
+        } catch (\Throwable $error) {
+            return self::fromFile($path);
+        }
+    }
+
+    public function withFallback(self $fallback): self
+    {
+        $values = $this->values;
+        foreach ($fallback->values as $name => $value) {
+            if (!isset($values[$name]) || trim((string) $values[$name]) === '') {
+                $values[$name] = $value;
+            }
+        }
+        return new self($values);
+    }
+
     public function require(string $name): string
     {
         $value = trim((string) ($this->values[$name] ?? ''));
@@ -44,5 +110,14 @@ final class RuntimeConfig
     {
         $value = $this->get($name);
         return $value !== '' && ctype_digit($value) ? (int) $value : $default;
+    }
+
+    public function getBool(string $name, bool $default): bool
+    {
+        $value = strtolower($this->get($name));
+        if ($value === '') {
+            return $default;
+        }
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 }

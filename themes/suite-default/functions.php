@@ -70,6 +70,24 @@ function themeConfig($form)
         [],
         _t('访问统计')
     ))->multiMode());
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'showHomeWidgets',
+        ['1' => _t('显示首页的分类、归档和最近回复模块')],
+        ['1'],
+        _t('首页附加模块')
+    ))->multiMode());
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'showArticleToc',
+        ['1' => _t('在文章页显示右侧目录')],
+        ['1'],
+        _t('文章目录')
+    ))->multiMode());
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'showCommentsFeed',
+        ['1' => _t('在页脚显示评论 RSS 链接')],
+        ['1'],
+        _t('评论 RSS')
+    ))->multiMode());
 }
 
 function suite_option($options, string $name, string $fallback): string

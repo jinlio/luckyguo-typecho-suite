@@ -6,7 +6,8 @@
         <?php if ($landingUrl !== ''): ?><a href="<?php echo htmlspecialchars($landingUrl, ENT_QUOTES, 'UTF-8'); ?>">个人主页</a><?php endif; ?>
         <?php if ($codeUrl !== ''): ?><a href="<?php echo htmlspecialchars($codeUrl, ENT_QUOTES, 'UTF-8'); ?>">代码仓库</a><?php endif; ?>
         <a href="<?php $this->options->feedUrl(); ?>">文章 RSS</a>
-        <a href="<?php $this->options->commentsFeedUrl(); ?>">评论 RSS</a>
+        <?php $showCommentsFeed = $this->options->showCommentsFeed ?? ['1']; ?>
+        <?php if (is_array($showCommentsFeed) ? in_array('1', $showCommentsFeed, true) : (string) $showCommentsFeed === '1'): ?><a href="<?php $this->options->commentsFeedUrl(); ?>">评论 RSS</a><?php endif; ?>
         <?php if ($this->user->hasLogin()): ?>
             <a href="<?php $this->options->adminUrl(); ?>">管理</a>
             <a href="<?php $this->options->profileUrl(); ?>">个人资料</a>

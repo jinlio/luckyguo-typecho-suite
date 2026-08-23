@@ -71,11 +71,28 @@ rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/
 
 在 Typecho 后台的“外观”中启用 `suite-default`，然后填写主题配置。若希望在“个人设置”中上传头像或填写头像地址，请先按目标 Typecho 1.3.0 源码版本应用 `patches/typecho-1.3.0-personal-avatar.patch`；上传文件会保存到 `usr/uploads/avatars`，头像地址保存在当前用户的个人选项中，留空时继续使用邮箱对应的 Gravatar。评论头像抓取失败时会回退到主题内置默认头像。升级前先备份 `config.inc.php`、数据库、`usr/themes`、`usr/plugins` 和 `usr/uploads`。
 
+### 快速开始（面向非技术用户）
+
+1. 安装 Typecho 1.3.0、PHP 7.4+、MySQL 8.0+ 并完成初始化。先备份 `config.inc.php`、数据库和 `usr/` 目录。
+2. 在服务器执行以下复制命令（把路径替换成实际 Typecho 根目录）：
+   ```sh
+   export TYPECHO_ROOT=/var/www/typecho
+   rsync -a themes/suite-default/ "$TYPECHO_ROOT/usr/themes/suite-default/"
+   rsync -a plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/"
+   rsync -a plugins/SuiteSearch/ "$TYPECHO_ROOT/usr/plugins/SuiteSearch/"
+   rsync -a plugins/SuiteMonitor/ "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/"
+   ```
+3. 登录 Typecho 后台，在“外观”中启用 `suite-default`，打开主题设置页填写站点名称、简介、图片、链接和统计开关。
+4. 在“插件”中只启用需要的组件。每个插件启用后都进入“设置”页：Sitemap 选择内容类型；SuiteSearch 填写 Meilisearch 和索引选项；SuiteMonitor 填写状态路径、数据库账号、服务和探测目标。
+5. 需要监控时，在独立数据库执行 `deploy/create-suite-monitor.sql`，并把 `deploy/monitor-collect.sh`、`deploy/monitor-prune.sh`、`deploy/suite-monitor-config.php` 安装到 Web 根目录之外；复制并调整 `deploy/monitor.cron` 后再启用 cron。
+6. 需要搜索队列或完整重建时，再执行 `deploy/create-suite-search.sql` 并安装 systemd timer；只做普通搜索时不需要创建队列表。
+7. 保存设置后依次打开首页、文章、评论、移动端、`/sitemap.xml`、搜索页和管理员监控面板。搜索服务不可用不会阻断发布，监控数据库暂时不可用仍会写入资源快照。
+
 ## 主题配置
 
 [](#theme-configuration)
 
-主题配置页可设置站点名称、作者信息、副标题、简介、关于页引导语/方向/技术栈/状态、头像、首页横幅、文章封面、站点与代码仓库链接、强调色、主题 Cookie、站点起始时间和访问统计。
+主题配置页可设置站点名称、作者信息、副标题、简介、关于页引导语/方向/技术栈/状态、头像、首页横幅、文章封面、站点与代码仓库链接、强调色、主题 Cookie、站点起始时间、访问统计、首页附加模块、文章目录和评论 RSS。
 
 Cookie 域名留空时只在当前主机生效；只有在明确需要多个可信子域共享主题状态时才填写父域。图片字段支持 HTTP(S) 地址；头像留空显示中性主题标识，横幅和文章封面留空时不显示。统计默认关闭；启用时执行 `deploy/create-suite-stats.sql`，并根据实际表前缀替换 `typecho_`。
 
@@ -99,7 +116,9 @@ Cookie 域名留空时只在当前主机生效；只有在明确需要多个可�
 
 [](#suitesearch)
 
-按需执行 `deploy/create-suite-search.sql`。将搜索配置放在站点根目录之外，例如 `/etc/typecho-suite/search.env`：
+按需执行 `deploy/create-suite-search.sql`。启用插件后，直接在后台设置页填写 Meilisearch 地址、各类 API Key、索引名称、自动同步和 LIKE 降级开关。留空地址或关闭 Meilisearch 即可只使用 MySQL 搜索。
+
+旧版本仍支持站点根目录之外的 `/etc/typecho-suite/search.env` 和 `TYPECHO_SUITE_SEARCH_CONFIG`，仅作为后台设置不存在时的兼容回退：
 
 ```ini
 MEILI_URL=http://127.0.0.1:7700
@@ -114,9 +133,11 @@ MEILI_INDEX_LIVE=posts_live
 
 [](#suitemonitor)
 
-先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`。将 `deploy/examples/monitor.env.example` 复制到 `/etc/typecho-suite/monitor.env`，仅授予 root 与 PHP 运行组读取权限；分别创建采集器读写账号和面板只读账号。将 `monitor-collect.sh`、`monitor-prune.sh` 安装在 Web 根目录之外，再按实际安装路径调整 `deploy/monitor.cron`。
+先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期。将 `monitor-collect.sh`、`monitor-prune.sh`、`suite-monitor-config.php` 安装在 Web 根目录之外，再按实际安装路径调整 `deploy/monitor.cron`；采集器会优先读取后台设置。
 
-`SITE_TARGETS` 使用空格分隔的 `key=host:port`，例如 `blog=blog.example.com:80 docs=docs.example.com:80`。在插件配置中填写同名目标的显示名称和可选公开链接。服务、主机、路径、保留天数、Cookie、监控 DSN、表前缀和 CPU 核数均由部署配置决定；监控面板仅允许管理员访问。
+旧版 `/etc/typecho-suite/monitor.env` 仍可作为升级期间的兼容回退，新安装无需手工编辑。密码不会写入状态快照或日志。
+
+`SITE_TARGETS` 使用空格分隔的 `key=host:port`，例如 `blog=blog.example.com:80 docs=docs.example.com:80`。在插件配置中填写同名目标的显示名称和可选公开链接。服务、主机、路径、保留天数、Cookie、监控 DSN、表前缀和 CPU 核数均可在后台修改；监控面板仅允许管理员访问。
 
 已存在旧版监控库时，先执行一次 `deploy/create-monitor-rollups.sql`，它会补建 `swap_total` 字段并重算汇总数据；新安装只需执行 `create-suite-monitor.sql`。只有在已安装 `create-suite-stats.sql`，且监控只读账号被授予对应 Typecho 数据库访问权限后，才开启面板里的匿名访问统计。
 

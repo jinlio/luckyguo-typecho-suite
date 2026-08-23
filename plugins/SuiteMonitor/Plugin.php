@@ -36,13 +36,43 @@ class Plugin implements PluginInterface
     public static function config(Form $form)
     {
         $form->addInput(new Form\Element\Text(
-            'statusFile', null, '/var/lib/typecho-suite/monitor/status.json', _t('状态 JSON 路径')
+            'statusFile', null, '/var/lib/typecho-suite/monitor/status.json', _t('状态 JSON 路径（采集器写入、面板读取）')
         ));
         $form->addInput(new Form\Element\Text(
-            'envFile', null, '/etc/typecho-suite/monitor.env', _t('监控数据库环境文件')
+            'envFile', null, '/etc/typecho-suite/monitor.env', _t('旧版监控环境文件路径（仅作兼容回退）')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'stateDir', null, '/var/lib/typecho-suite/monitor', _t('采集器状态目录')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'logFile', null, '/var/log/nginx/access.log', _t('Nginx 访问日志路径')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'monitorCnf', null, '/etc/typecho-suite/monitor-rw.cnf', _t('监控数据库写入凭据文件路径（旧版兼容）')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'monitorDb', null, 'monitor', _t('监控数据库名称')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'monitorDbHost', null, '127.0.0.1', _t('监控数据库主机')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'monitorDbPort', null, '3306', _t('监控数据库端口')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'monitorRwUser', null, '', _t('采集器写入数据库用户名（可选）')
+        ));
+        $form->addInput(new Form\Element\Password(
+            'monitorRwPass', null, '', _t('采集器写入数据库密码（可选）')
         ));
         $form->addInput(new Form\Element\Text(
             'databaseDsn', null, 'mysql:host=127.0.0.1;dbname=monitor;charset=utf8mb4', _t('监控数据库 DSN')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'monitorRoUser', null, '', _t('监控面板只读数据库用户名（可选）')
+        ));
+        $form->addInput(new Form\Element\Password(
+            'monitorRoPass', null, '', _t('监控面板只读数据库密码（可选）')
         ));
         $form->addInput(new Form\Element\Text(
             'typechoDatabase', null, 'typecho', _t('Typecho 数据库名（统计关联）')
@@ -52,6 +82,27 @@ class Plugin implements PluginInterface
         ));
         $form->addInput(new Form\Element\Text(
             'cpuCores', null, '1', _t('CPU 核数')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'serviceUnits', null, 'nginx php-fpm mysqld', _t('需要监测的 systemd 服务（空格分隔）')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'siteTargets', null, '', _t('站点探测目标（空格分隔，例如 blog=blog.example.com:80）')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'statusOwner', null, '', _t('状态文件 owner（可选）')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'statusGroup', null, '', _t('状态文件 group（可选）')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'statusMode', null, '0640', _t('状态文件权限（例如 0640）')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'rawRetentionDays', null, '45', _t('原始监控数据保留天数')
+        ));
+        $form->addInput(new Form\Element\Text(
+            'rollupRetentionDays', null, '400', _t('汇总监控数据保留天数')
         ));
         $form->addInput(new Form\Element\Textarea(
             'siteLabels', null, '{"blog":"主站","docs":"文档"}', _t('监测目标显示名称 JSON（可选）')

@@ -64,11 +64,15 @@ function mon_fnum(float $v, int $d = 0): string { return number_format($v, $d, '
 
 $pdo = null;
 $monEnv = @parse_ini_file(MON_ENV_FILE, false, INI_SCANNER_RAW) ?: [];
+$monRoUser = trim((string) ($monitorSettings->monitorRoUser ?? ''));
+$monRoPass = (string) ($monitorSettings->monitorRoPass ?? '');
+if ($monRoUser === '') $monRoUser = (string) ($monEnv['MONITOR_RO_USER'] ?? '');
+if ($monRoPass === '') $monRoPass = (string) ($monEnv['MONITOR_RO_PASS'] ?? '');
 try {
     $pdo = new PDO(
         MON_DB_DSN,
-        (string)($monEnv['MONITOR_RO_USER'] ?? ''),
-        (string)($monEnv['MONITOR_RO_PASS'] ?? ''),
+        $monRoUser,
+        $monRoPass,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
     );
 } catch (Throwable $e) {

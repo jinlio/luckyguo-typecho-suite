@@ -1,2 +1,4 @@
-* * * * * root TYPECHO_SUITE_MONITOR_CONFIG=/etc/typecho-suite/monitor.env /usr/local/sbin/typecho-suite-monitor-collect >> /var/log/typecho-suite-monitor.log 2>&1
-17 4 * * * root TYPECHO_SUITE_MONITOR_CONFIG=/etc/typecho-suite/monitor.env /usr/local/sbin/typecho-suite-monitor-prune >> /var/log/typecho-suite-monitor.log 2>&1
+# Set TYPECHO_ROOT and TYPECHO_SUITE_MONITOR_EXPORTER to the installed Typecho
+# root and deploy/suite-monitor-config.php path on the target server.
+* * * * * root TYPECHO_ROOT=/var/www/typecho TYPECHO_SUITE_MONITOR_CONFIG=/etc/typecho-suite/monitor.env TYPECHO_SUITE_MONITOR_EXPORTER=/usr/local/libexec/typecho-suite-monitor-config.php /usr/local/sbin/typecho-suite-monitor-collect >> /var/log/typecho-suite-monitor.log 2>&1
+17 4 * * * root TYPECHO_ROOT=/var/www/typecho TYPECHO_SUITE_MONITOR_CONFIG=/etc/typecho-suite/monitor.env TYPECHO_SUITE_MONITOR_EXPORTER=/usr/local/libexec/typecho-suite-monitor-config.php /usr/local/sbin/typecho-suite-monitor-prune >> /var/log/typecho-suite-monitor.log 2>&1

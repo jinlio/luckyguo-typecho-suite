@@ -28,10 +28,13 @@ $readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / 480));
                 <?php echo suite_avatar_markup($this->options); ?>
                 <strong><?php echo htmlspecialchars(suite_option($this->options, 'authorName', '站点作者'), ENT_QUOTES, 'UTF-8'); ?></strong>
                 <span><?php echo htmlspecialchars(suite_option($this->options, 'authorHandle', 'author'), ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php $showArticleToc = $this->options->showArticleToc ?? ['1']; ?>
+                <?php if (is_array($showArticleToc) ? in_array('1', $showArticleToc, true) : (string) $showArticleToc === '1'): ?>
                 <nav class="article-toc" aria-label="文章目录">
                     <p>ON THIS PAGE</p>
                     <ol></ol>
                 </nav>
+                <?php endif; ?>
             </aside>
         </div>
         <div class="article-tags"><?php $this->tags('#', true, ''); ?></div>

@@ -75,6 +75,8 @@ $this->need('header.php');
         <?php \Widget\Metas\Category\Rows::alloc()->to($categories); ?>
         <?php \Widget\Contents\Post\Date::alloc('type=month&format=Y 年 m 月&limit=6')->to($months); ?>
         <?php \Widget\Comments\Recent::alloc('pageSize=5')->to($recentComments); ?>
+        <?php $showHomeWidgets = $this->options->showHomeWidgets ?? ['1']; ?>
+        <?php if (is_array($showHomeWidgets) ? in_array('1', $showHomeWidgets, true) : (string) $showHomeWidgets === '1'): ?>
         <section class="typecho-widgets" aria-label="站点浏览">
             <section class="native-widget">
                 <div class="native-widget-heading"><strong>分类</strong><span>CATEGORIES</span></div>
@@ -114,6 +116,7 @@ $this->need('header.php');
                 </div>
             </section>
         </section>
+        <?php endif; ?>
     <?php endif; ?>
 </main>
 <?php $this->need('footer.php'); ?>

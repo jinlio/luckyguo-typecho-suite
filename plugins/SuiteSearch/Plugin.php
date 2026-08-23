@@ -42,6 +42,39 @@ final class Plugin implements PluginInterface
 
     public static function config(\Typecho\Widget\Helper\Form $form): void
     {
+        $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+            'enabled', ['1' => _t('启用 Meilisearch 搜索')], ['1'], _t('搜索引擎')
+        ))->multiMode());
+        $form->addInput((new \Typecho\Widget\Helper\Form\Element\Text(
+            'meiliUrl', null, 'http://127.0.0.1:7700', _t('Meilisearch 地址（留空则使用 MySQL 搜索）')
+        ))->addRule('url', _t('请输入有效的 HTTP(S) 地址')));
+        $form->addInput(new \Typecho\Widget\Helper\Form\Element\Password(
+            'searchKey', null, '', _t('搜索 API Key（只读）')
+        ));
+        $form->addInput(new \Typecho\Widget\Helper\Form\Element\Password(
+            'writeKey', null, '', _t('写入 API Key（可选，用于发布后同步）')
+        ));
+        $form->addInput(new \Typecho\Widget\Helper\Form\Element\Password(
+            'rebuildKey', null, '', _t('重建 API Key（可选，用于完整重建）')
+        ));
+        $form->addInput(new \Typecho\Widget\Helper\Form\Element\Password(
+            'taskKey', null, '', _t('任务查询 API Key（留空使用重建 API Key）')
+        ));
+        $form->addInput(new \Typecho\Widget\Helper\Form\Element\Text(
+            'liveIndex', null, 'posts_live', _t('在线索引名称')
+        ));
+        $form->addInput(new \Typecho\Widget\Helper\Form\Element\Text(
+            'buildIndex', null, 'posts_build', _t('构建索引名称')
+        ));
+        $form->addInput((new \Typecho\Widget\Helper\Form\Element\Text(
+            'rebuildFenceTimeout', null, '30', _t('重建切换超时（秒，最少 5 秒）')
+        ))->addRule('isInteger', _t('请输入整数')));
+        $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+            'autoSync', ['1' => _t('文章发布、保存和删除后自动同步索引')], ['1'], _t('实时同步')
+        ))->multiMode());
+        $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+            'mysqlFallback', ['1' => _t('Meilisearch 不可用时使用 MySQL LIKE 搜索')], ['1'], _t('降级策略')
+        ))->multiMode());
     }
 
     public static function personalConfig(\Typecho\Widget\Helper\Form $form): void

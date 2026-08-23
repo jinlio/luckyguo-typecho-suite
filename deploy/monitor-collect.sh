@@ -8,10 +8,21 @@ if [[ -r "$CONFIG_FILE" ]]; then
   # shellcheck disable=SC1090
   . "$CONFIG_FILE"
 fi
+# New installations configure these values in the SuiteMonitor admin page.
+CONFIG_EXPORTER="${TYPECHO_SUITE_MONITOR_EXPORTER:-/usr/local/libexec/typecho-suite-monitor-config.php}"
+if [[ -r "$CONFIG_EXPORTER" ]] && command -v php >/dev/null 2>&1; then
+  # shellcheck disable=SC1090
+  eval "$(TYPECHO_ROOT="${TYPECHO_ROOT:-/var/www/typecho}" php "$CONFIG_EXPORTER" 2>/dev/null || true)"
+fi
 : "${STATE_DIR:=/var/lib/typecho-suite/monitor}"
+: "${STATUS_FILE:=$STATE_DIR/status.json}"
 : "${LOG:=/var/log/nginx/access.log}"
 : "${CNF:=/etc/typecho-suite/monitor-rw.cnf}"
 : "${MONITOR_DB:=monitor}"
+: "${MONITOR_DB_HOST:=127.0.0.1}"
+: "${MONITOR_DB_PORT:=3306}"
+: "${MONITOR_RW_USER:=}"
+: "${MONITOR_RW_PASS:=}"
 : "${SERVICE_UNITS:=nginx php-fpm mysqld}"
 # Space-separated key=host:port entries. Keys are persisted in site_checks.
 : "${SITE_TARGETS:=}"
@@ -24,6 +35,20 @@ mkdir -p "$STATE_DIR"
 
 exec 9>/run/monitor-collect.lock
 flock -n 9 || exit 0
+
+# Backend settings can provide a dedicated write account. Generate a short-lived
+# client file so the password does not appear in the process list or snapshot.
+TEMP_CNF=''
+if [[ -n "$MONITOR_RW_USER" && -n "$MONITOR_RW_PASS" ]]; then
+  TEMP_CNF="$STATE_DIR/.monitor-rw.generated.cnf"
+  umask 077
+  {
+    printf '[client]\nuser=%s\npassword=%s\nhost=%s\nport=%s\n' \
+      "$MONITOR_RW_USER" "$MONITOR_RW_PASS" "$MONITOR_DB_HOST" "$MONITOR_DB_PORT"
+  } > "$TEMP_CNF"
+  CNF="$TEMP_CNF"
+  trap 'rm -f "$TEMP_CNF"' EXIT
+fi
 
 TS=$(date '+%Y-%m-%d %H:%M:00')
 NOW=$(date +%s)
@@ -183,8 +208,9 @@ SQL
 cat > "$STATE_DIR/.status.json.tmp" <<EOF
 {"ts":"$TS","uptime_min":$UP_MIN,"load":[$LOAD1,$LOAD5,$LOAD15],"cpu_pct":$CPU_PCT,"mem_total_mb":$MEM_TOTAL,"mem_used_mb":$MEM_USED,"swap_total_mb":$SWAP_TOTAL,"swap_used_mb":$SWAP_USED,"disk_total_mb":$DISK_TOTAL,"disk_used_mb":$DISK_USED,"net_rx_kbps":$NET_RX,"net_tx_kbps":$NET_TX,"procs":$TOTAL_PROCS,"services":$SVC,"sites":$SITE_JSON,"traffic":{"requests":$REQ,"bytes_kb":$BYTES_KB,"s2xx":$S2,"s3xx":$S3,"s4xx":$S4,"s5xx":$S5,"top_ips":$TOPJSON}}
 EOF
-mv "$STATE_DIR/.status.json.tmp" "$STATE_DIR/status.json"
+mkdir -p "$(dirname "$STATUS_FILE")"
+mv "$STATE_DIR/.status.json.tmp" "$STATUS_FILE"
 if [[ -n "$STATUS_OWNER" || -n "$STATUS_GROUP" ]]; then
-  chown "${STATUS_OWNER:-root}${STATUS_GROUP:+:$STATUS_GROUP}" "$STATE_DIR/status.json"
+  chown "${STATUS_OWNER:-root}${STATUS_GROUP:+:$STATUS_GROUP}" "$STATUS_FILE"
 fi
-chmod "$STATUS_MODE" "$STATE_DIR/status.json"
+chmod "$STATUS_MODE" "$STATUS_FILE"

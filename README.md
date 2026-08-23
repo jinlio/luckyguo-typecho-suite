@@ -69,11 +69,28 @@ rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO\_ROOT/usr/plugins/Sitemap
 
 Select `suite-default` in Typecho Appearance and fill in its settings. To add avatar upload and avatar URL fields to Typecho's Profile page, apply `patches/typecho-1.3.0-personal-avatar.patch` to the matching Typecho 1.3.0 source tree first. Uploaded files are stored under `usr/uploads/avatars`; the URL is stored in the current user's personal options. Leaving both empty uses the Gravatar matching the email address. Comment avatars fall back to the theme's bundled default avatar when Gravatar cannot be loaded. Back up `config.inc.php`, the database, `usr/themes`, `usr/plugins`, and `usr/uploads` before upgrades.
 
+### Quick start for non-technical users
+
+1. Install Typecho 1.3.0, PHP 7.4+, and MySQL 8.0+, then finish the normal Typecho setup. Back up `config.inc.php`, the database, and `usr/` first.
+2. Copy the reusable files (replace the root path as needed):
+   ```sh
+   export TYPECHO_ROOT=/var/www/typecho
+   rsync -a themes/suite-default/ "$TYPECHO_ROOT/usr/themes/suite-default/"
+   rsync -a plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/"
+   rsync -a plugins/SuiteSearch/ "$TYPECHO_ROOT/usr/plugins/SuiteSearch/"
+   rsync -a plugins/SuiteMonitor/ "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/"
+   ```
+3. Enable `suite-default` under Appearance and fill in the theme settings.
+4. Enable only the plugins you need, then use their graphical settings pages. Sitemap controls content types; SuiteSearch controls Meilisearch, indexing, sync, and fallback; SuiteMonitor controls paths, credentials, services, probes, and retention.
+5. For monitoring, run `deploy/create-suite-monitor.sql` in a dedicated database and install `monitor-collect.sh`, `monitor-prune.sh`, and `suite-monitor-config.php` outside the web root. Adapt `deploy/monitor.cron` and enable cron.
+6. For search queues or full rebuilds, run `deploy/create-suite-search.sql` and install the supplied systemd timer. Ordinary MySQL search does not need the queue tables.
+7. Check the home page, an article, comments, mobile layout, `/sitemap.xml`, search, and the administrator-only monitor panel. Search failure does not block publishing, and monitor snapshots continue when the database is temporarily unavailable.
+
 ## Theme configuration
 
 [](#theme-configuration)
 
-The settings page controls site name, author name and handle, tagline, biography, avatar, homepage banner, article cover, homepage/code links, accent color, cookie name/domain, uptime start time, statistics switch, and counter bucket count.
+The settings page controls site name, author name and handle, tagline, biography, avatar, homepage banner, article cover, homepage/code links, accent color, cookie name/domain, uptime start time, statistics switch, homepage auxiliary modules, article table of contents, comment RSS, and counter bucket count.
 
 Leave the cookie domain empty for a host-only preference. Set it only when trusted subdomains need to share it. Image fields accept HTTP(S) URLs; a missing avatar shows a neutral theme mark, while a missing banner or article cover is omitted. Statistics are disabled by default and require `deploy/create-suite-stats.sql`.
 
@@ -97,7 +114,9 @@ Enable `Sitemap`, choose content types, and validate with `curl -fsS https://blo
 
 [](#suitesearch)
 
-Install `deploy/create-suite-search.sql`. Keep the search configuration outside the web root:
+Install `deploy/create-suite-search.sql`, enable SuiteSearch, and fill in the Meilisearch URL, API keys, index names, automatic sync, and LIKE fallback switches in the plugin settings page. Leave the URL empty or disable Meilisearch to use MySQL search only.
+
+The legacy environment file remains supported as a fallback when backend settings have never been saved:
 
 MEILI\_URL\=http://127.0.0.1:7700
 SEARCH\_KEY\=replace-with-search-only-key
@@ -110,9 +129,11 @@ Set `TYPECHO_SUITE_SEARCH_CONFIG` for another path. Without valid Meilisearch co
 
 [](#suitemonitor)
 
-Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Copy `deploy/examples/monitor.env.example` to `/etc/typecho-suite/monitor.env`, restrict it to root and the PHP worker group, and create separate read/write and read-only database accounts. Install `monitor-collect.sh` and `monitor-prune.sh` outside the web root, then adapt `deploy/monitor.cron` to the installed paths.
+Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Configure the status path, log path, database credentials, service units, site probes, and retention periods in the SuiteMonitor settings page. Install `monitor-collect.sh`, `monitor-prune.sh`, and `suite-monitor-config.php` outside the web root, then adapt `deploy/monitor.cron` to the installed paths. The collector exports saved backend settings at runtime.
 
-`SITE_TARGETS` accepts space-separated `key=host:port` entries, such as `blog=blog.example.com:80 docs=docs.example.com:80`. Configure matching labels and optional public URLs in the plugin settings. The panel is administrator-only; all monitored services, hosts, paths, retention values, cookie settings, database DSN, table prefix, and CPU core count are deployment-specific settings.
+The legacy `/etc/typecho-suite/monitor.env` remains a compatibility fallback during upgrades; new installations do not need to edit it. Passwords are never written to the status snapshot.
+
+`SITE_TARGETS` accepts space-separated `key=host:port` entries, such as `blog=blog.example.com:80 docs=docs.example.com:80`. Configure matching labels and optional public URLs in the plugin settings. The panel is administrator-only; monitored services, hosts, paths, retention values, cookie settings, database DSN, table prefix, and CPU core count are all editable in the backend.
 
 For an existing monitor database created by an earlier Suite version, run `deploy/create-monitor-rollups.sql` once before the new collector. It adds `swap_total` and recomputes rollups. New installations must use only `create-suite-monitor.sql`. Enable the panel's anonymous-statistics option only after `create-suite-stats.sql` has been installed and the monitor read-only account has access to the selected Typecho database.
 
