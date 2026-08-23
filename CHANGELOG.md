@@ -43,4 +43,5 @@
 - Production verification: created a rollback snapshot at `/var/backups/luckyguo/monitor-navigation-logs-20260823-195955`, deployed the monitor files, passed PHP 8.3.33 lint, confirmed a single `SuiteMonitor/panel.php` registration, confirmed the log heartbeat, and confirmed log rows continue to be written.
 - Added the new GUI and log collector behavior to `README.md` and `README.zh-CN.md`.
 - Refined the monitor log presentation with a compact toolbar, event total, clearer filters, and responsive table spacing; clarified the GUI labels for personal branding and the default Console/Home/Landing naming.
+- Documented the exact Typecho Admin -> Plugins -> SuiteMonitor -> Settings location for personal branding, navigation, and footer controls in both README files.
 - Not yet verified: PHP 7.4 runtime behavior, browser screenshots at mobile/desktop sizes, and production deployment.
