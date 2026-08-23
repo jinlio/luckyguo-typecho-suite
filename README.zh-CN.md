@@ -22,6 +22,7 @@
 | `deploy/create-suite-monitor.sql` | 可选监控数据库表结构 | 否 |
 | `deploy/create-suite-stats.sql` | 可选匿名统计表结构 | 否 |
 | `deploy/install-monitor.sh` | 安装监控运行文件和 cron 任务 | 否 |
+| `deploy/monitor-log-collect.sh` | 采集配置的错误日志和 journald 事件 | 否 |
 | `deploy/check-install.sh` | 只读检查安装和运行环境 | 否 |
 
 ## 截图展示
@@ -80,15 +81,16 @@ rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/
    ```sh
    export TYPECHO_ROOT=/var/www/typecho
    rsync -a themes/suite-default/ "$TYPECHO_ROOT/usr/themes/suite-default/"
+   rsync -a plugins/SuiteAdmin/ "$TYPECHO_ROOT/usr/plugins/SuiteAdmin/" # 可选
    rsync -a plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/"
    rsync -a plugins/SuiteSearch/ "$TYPECHO_ROOT/usr/plugins/SuiteSearch/"
    rsync -a plugins/SuiteMonitor/ "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/"
    ```
 3. 登录 Typecho 后台，在“外观”中启用 `suite-default`，打开主题设置页填写站点名称、简介、图片、链接和统计开关。
 4. 在“插件”中只启用需要的组件。每个插件启用后都进入“设置”页：Sitemap 选择内容类型；SuiteSearch 填写 Meilisearch 和索引选项；SuiteMonitor 填写状态路径、数据库账号、服务和探测目标。
-5. 需要监控时，在独立数据库执行 `deploy/create-suite-monitor.sql`，然后运行 `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`。脚本会把采集器、清理器和配置导出器安装到 Web 根目录之外，并安装 cron；遇到空面板或数据不更新时运行 `deploy/check-install.sh` 做只读诊断。
+5. 需要监控时，从仓库根目录在独立数据库执行 `deploy/create-suite-monitor.sql`，然后运行 `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`。脚本会把资源采集器、日志采集器、清理器和配置导出器安装到 Web 根目录之外，并安装 cron；遇到空面板或数据不更新时运行 `deploy/check-install.sh` 做只读诊断。
 6. 需要搜索队列或完整重建时，再执行 `deploy/create-suite-search.sql` 并安装 systemd timer；只做普通搜索时不需要创建队列表。
-7. 保存设置后依次打开首页、文章、评论、移动端、`/sitemap.xml`、搜索页和管理员监控面板。搜索服务不可用不会阻断发布，监控数据库暂时不可用仍会写入资源快照。
+7. 保存设置后依次打开首页、文章、评论、移动端、`/sitemap.xml`、搜索页和管理员监控面板。搜索服务不可用不会阻断发布；监控数据库暂时不可用时，采集器仍会写入资源快照，但历史折线图和依赖数据库的面板数据要等数据库恢复后才能显示。
 
 ## 主题配置
 
@@ -137,7 +139,7 @@ MEILI_INDEX_LIVE=posts_live
 
 [](#suitemonitor)
 
-先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`，再运行 `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`。在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期，并选择面板默认时间范围、自动刷新频率、默认主题，还可以设置监控面板自己的站点名称、标识和头像地址。品牌字段留空时自动继承当前主题的站点名称、作者标识和头像。采集器会优先读取后台设置；遇到安装或运行问题时使用 `deploy/check-install.sh`。
+从仓库根目录先在独立监控数据库中执行 `deploy/create-suite-monitor.sql`，再运行 `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`。脚本会安装资源采集器、日志采集器、清理器、配置导出器和 cron。之后在后台设置页填写状态文件、日志、监控数据库、只读账号、服务列表、站点探测目标和保留周期，并选择面板默认时间范围、自动刷新频率、默认主题，还可以设置监控面板自己的站点名称、标识和头像地址。品牌字段留空时自动继承当前主题的站点名称、作者标识和头像。采集器会优先读取后台设置；遇到安装或运行问题时使用 `deploy/check-install.sh`。
 
 监控顶部导航在 `navItems` 中配置，每行格式为 `key=名称|目标`，目标可以是 `admin`、`site`、已配置的站点 key 或 HTTP(S) 地址。默认只显示“控制台”“首页”“落地页”；未配置的目标会自动隐藏。页脚代码仓库由“显示代码仓库”开关和 `footerRepoUrl` 控制，默认隐藏。异常日志由 `logSources`（每行 `source=绝对路径`）和 `logJournalUnits` 配置，采集器写入 `log_events`，面板提供近 24 小时列表、级别筛选和自动刷新。
 
@@ -173,7 +175,10 @@ SQL 示例使用 `typecho_` 前缀；如需更换前缀请在所有示例中保�
 ./tests/static-check.sh
 git diff --check
 bash -n deploy/monitor-collect.sh
+bash -n deploy/monitor-log-collect.sh
 bash -n deploy/monitor-prune.sh
+bash -n deploy/check-install.sh
+bash -n deploy/install-monitor.sh
 node --check themes/suite-default/site.js
 node --check themes/suite-default/assets/mac-code.js
 ```

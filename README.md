@@ -22,6 +22,7 @@ This repository contains no personal domain, author identity, production databas
 | `deploy/create-suite-monitor.sql` | Optional monitor database schema | No |
 | `deploy/create-suite-stats.sql` | Optional anonymous statistics schema | No |
 | `deploy/install-monitor.sh` | Installs the monitor runtime and cron schedule | No |
+| `deploy/monitor-log-collect.sh` | Collects configured error logs and journald events | No |
 | `deploy/check-install.sh` | Read-only installation and runtime diagnosis | No |
 
 ## Screenshots
@@ -64,10 +65,12 @@ Target: Typecho 1.3.0, PHP 7.4+, MySQL 8.0+ with the `Mysqli` adapter, and Nginx
 
 [](#minimal-installation)
 
-export TYPECHO\_ROOT=/var/www/typecho
+```sh
+export TYPECHO_ROOT=/var/www/typecho
 git clone https://github.com/jinlio/luckyguo-typecho-suite.git /tmp/typecho-suite
-rsync -a /tmp/typecho-suite/themes/suite-default/ "$TYPECHO\_ROOT/usr/themes/suite-default/"
-rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO\_ROOT/usr/plugins/Sitemap/"
+rsync -a /tmp/typecho-suite/themes/suite-default/ "$TYPECHO_ROOT/usr/themes/suite-default/"
+rsync -a /tmp/typecho-suite/plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/"
+```
 
 Select `suite-default` in Typecho Appearance and fill in its settings. To add avatar upload and avatar URL fields to Typecho's Profile page, apply `patches/typecho-1.3.0-personal-avatar.patch` to the matching Typecho 1.3.0 source tree first. Uploaded files are stored under `usr/uploads/avatars`; the URL is stored in the current user's personal options. Comment avatars use the bundled local default by default; enable `useGravatar` in the theme settings only when third-party avatar requests are acceptable. Back up `config.inc.php`, the database, `usr/themes`, `usr/plugins`, and `usr/uploads` before upgrades.
 
@@ -78,15 +81,16 @@ Select `suite-default` in Typecho Appearance and fill in its settings. To add av
    ```sh
    export TYPECHO_ROOT=/var/www/typecho
    rsync -a themes/suite-default/ "$TYPECHO_ROOT/usr/themes/suite-default/"
+   rsync -a plugins/SuiteAdmin/ "$TYPECHO_ROOT/usr/plugins/SuiteAdmin/" # optional
    rsync -a plugins/Sitemap/ "$TYPECHO_ROOT/usr/plugins/Sitemap/"
    rsync -a plugins/SuiteSearch/ "$TYPECHO_ROOT/usr/plugins/SuiteSearch/"
    rsync -a plugins/SuiteMonitor/ "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/"
    ```
 3. Enable `suite-default` under Appearance and fill in the theme settings.
 4. Enable only the plugins you need, then use their graphical settings pages. Sitemap controls content types; SuiteSearch controls Meilisearch, indexing, sync, and fallback; SuiteMonitor controls paths, credentials, services, probes, and retention.
-5. For monitoring, run `deploy/create-suite-monitor.sql` in a dedicated database, then run `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`. The installer places the collector outside the web root and installs the cron schedule. Use `deploy/check-install.sh` for a read-only diagnosis before or after installation.
+5. From the repository root, run `deploy/create-suite-monitor.sql` in a dedicated database, then run `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh`. The installer places the collector, log collector, pruner, and settings exporter outside the web root and installs the cron schedule. Use `deploy/check-install.sh` for a read-only diagnosis before or after installation.
 6. For search queues or full rebuilds, run `deploy/create-suite-search.sql` and install the supplied systemd timer. Ordinary MySQL search does not need the queue tables.
-7. Check the home page, an article, comments, mobile layout, `/sitemap.xml`, search, and the administrator-only monitor panel. Search failure does not block publishing, and monitor snapshots continue when the database is temporarily unavailable.
+7. Check the home page, an article, comments, mobile layout, `/sitemap.xml`, search, and the administrator-only monitor panel. Search failure does not block publishing. If the monitor database is temporarily unavailable, the collector still writes the resource snapshot; historical charts and database-backed panels may be unavailable until the database recovers.
 
 ## Theme configuration
 
@@ -133,7 +137,7 @@ Set `TYPECHO_SUITE_SEARCH_CONFIG` for another path. Without valid Meilisearch co
 
 [](#suitemonitor)
 
-Run `deploy/create-suite-monitor.sql` in a dedicated monitoring database. Run `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh` to install the collector, log collector, pruner, exporter, and cron schedule. Configure the status path, log path, database credentials, service units, site probes, retention periods, default range, refresh interval, default theme, and optional monitor brand name/handle/avatar URL in the SuiteMonitor settings page. Empty brand fields inherit the active theme's site name, author handle, and avatar. Use `deploy/check-install.sh` when a panel is empty or stale. The collector exports saved backend settings at runtime.
+From the repository root, run `deploy/create-suite-monitor.sql` in a dedicated monitoring database, then run `sudo TYPECHO_ROOT=/var/www/typecho deploy/install-monitor.sh` to install the collector, log collector, pruner, settings exporter, and cron schedule outside the web root. Configure the status path, log path, database credentials, service units, site probes, retention periods, default range, refresh interval, default theme, and optional monitor brand name/handle/avatar URL in the SuiteMonitor settings page. Empty brand fields inherit the active theme's site name, author handle, and avatar. Use `deploy/check-install.sh` when a panel is empty or stale. The collector exports saved backend settings at runtime.
 
 Configure monitor navigation with one `key=label|target` entry per line in `navItems`. Targets may be `admin`, `site`, a configured site key, or an HTTP(S) URL. The default navigation is Console, Home, and Landing; entries whose targets are not configured are hidden. The optional footer repository is controlled by the display checkbox and `footerRepoUrl`, and is hidden by default. Configure `logSources` as `source=/absolute/path` entries and `logJournalUnits` for journald services; the log collector writes `log_events`, which powers the 24-hour filtered exception log.
 
@@ -172,11 +176,17 @@ SQL examples use the `typecho_` prefix; replace it consistently for another pref
 
 [](#release-checks)
 
+```sh
+./tests/static-check.sh
 git diff --check
 bash -n deploy/monitor-collect.sh
+bash -n deploy/monitor-log-collect.sh
 bash -n deploy/monitor-prune.sh
+bash -n deploy/check-install.sh
+bash -n deploy/install-monitor.sh
 node --check themes/suite-default/site.js
 node --check themes/suite-default/assets/mac-code.js
+```
 
 Run `php -l` on every PHP file with the target PHP version, then install into a disposable Typecho instance. Test anonymous pages, RSS, comments, uploads, admin pages, Sitemap, search fallback, optional statistics, monitor access, default/custom prefixes, upgrade, and rollback. For SuiteMonitor, verify an empty `SITE_TARGETS`, multiple targets, unavailable log files, a zero-Swap host, and the read-only database account.
 
