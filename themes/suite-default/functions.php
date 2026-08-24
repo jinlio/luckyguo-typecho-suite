@@ -440,7 +440,9 @@ function suite_entry_description($widget, $options, int $length = 180): string
     }
 
     // Deployment notes are useful to readers but make poor search snippets.
+    $text = preg_replace('/^\s*<!--markdown-->\s*/i', '', $text, 1) ?? $text;
     $text = preg_replace('/^\s*<blockquote\b[^>]*>.*?<\/blockquote>\s*/is', '', $text, 1) ?? $text;
+    $text = preg_replace('/^(?:\s*>[^\r\n]*(?:\r?\n|$))+/', '', $text, 1) ?? $text;
     return suite_list_excerpt($text, $length);
 }
 
