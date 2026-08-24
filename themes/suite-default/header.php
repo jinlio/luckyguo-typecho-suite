@@ -1,20 +1,39 @@
 <?php if (!defined('__TYPECHO_ROOT_DIR__')) exit; suite_record_visit($this->options); ?>
 <?php
+$isIndex = method_exists($this, 'is') && $this->is('index');
+$isPost = method_exists($this, 'is') && $this->is('post');
+$isPage = method_exists($this, 'is') && $this->is('page');
+$isSearch = method_exists($this, 'is') && $this->is('search');
+$isSingle = method_exists($this, 'is') && $this->is('single') && !$isIndex;
+$isNotFound = function_exists('http_response_code') && http_response_code() === 404;
+$siteUrl = suite_site_url($this->options);
+$siteName = suite_option($this->options, 'siteName', (string) $this->options->title);
+$siteDescription = suite_option($this->options, 'tagline', (string) $this->options->description);
+$homeTitle = suite_option($this->options, 'seoHomeTitle', '');
+$homeDescription = suite_option($this->options, 'seoHomeDescription', $siteDescription);
 $archiveDescription = trim((string) ($this->getArchiveDescription() ?? ''));
+if ($isIndex) {
+    $archiveDescription = $homeDescription;
+} elseif ($isPost || $isPage) {
+    $entryDescription = suite_entry_description($this, $this->options);
+    if ($entryDescription !== '') {
+        $archiveDescription = $entryDescription;
+    }
+}
 if ($archiveDescription === '') {
     $archiveTitle = trim((string) ($this->getArchiveTitle() ?? ''));
     $archiveDescription = $archiveTitle !== ''
-        ? $archiveTitle . ' - ' . (string) $this->options->description
-        : (string) $this->options->description;
+        ? $archiveTitle . ' - ' . $siteDescription
+        : $siteDescription;
     $this->setArchiveDescription($archiveDescription);
 }
 $canonicalUrl = suite_current_canonical($this, $this->options);
-$isSingle = $this->is('single') && !$this->is('index');
-$siteName = suite_option($this->options, 'siteName', (string) $this->options->title);
-$siteDescription = suite_option($this->options, 'tagline', (string) $this->options->description);
 $pageTitle = trim((string) ($this->getArchiveTitle() ?? ''));
 $pageTitle = $pageTitle !== '' ? $pageTitle : $siteName;
-$ogImage = ($this->is('post') || $this->is('page')) ? suite_entry_thumbnail($this, $this->options) : suite_asset($this->options, 'ogImageUrl');
+$documentTitle = $isIndex
+    ? ($homeTitle !== '' ? $homeTitle : $siteName)
+    : ($pageTitle === $siteName ? $siteName : $pageTitle . ' · ' . $siteName);
+$ogImage = ($isPost || $isPage) ? suite_entry_thumbnail($this, $this->options) : suite_asset($this->options, 'ogImageUrl');
 if ($ogImage === '') {
     $ogImage = suite_asset($this->options, 'ogImageUrl');
 }
@@ -23,6 +42,12 @@ if ($ogImage === '') {
 }
 $keywords = suite_meta_keywords($this, $this->options);
 $favicon = suite_asset($this->options, 'faviconUrl', (string) $this->options->themeUrl('assets/favicon.svg', $this->options->theme));
+$authorName = suite_option($this->options, 'authorName', '网站作者');
+$authorUrl = $siteUrl . '/about.html';
+$createdAt = (int) ($this->created ?? 0);
+$modifiedAt = (int) ($this->modified ?? 0);
+$publishedIso = $createdAt > 0 ? date(DATE_ATOM, $createdAt) : '';
+$modifiedIso = $modifiedAt > 0 ? date(DATE_ATOM, $modifiedAt) : $publishedIso;
 ?>
 <!doctype html>
 <html lang="zh-CN">
@@ -30,30 +55,83 @@ $favicon = suite_asset($this->options, 'faviconUrl', (string) $this->options->th
     <meta charset="<?php $this->options->charset(); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#fcfafb">
-    <title><?php $this->archiveTitle('', '', ' · '); ?><?php $this->options->title(); ?></title>
+    <title><?php echo htmlspecialchars($documentTitle, ENT_QUOTES, 'UTF-8'); ?></title>
     <meta name="description" content="<?php echo htmlspecialchars($archiveDescription, ENT_QUOTES, 'UTF-8'); ?>">
     <meta name="keywords" content="<?php echo htmlspecialchars($keywords, ENT_QUOTES, 'UTF-8'); ?>">
-    <?php if (!$isSingle): ?><link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
+    <?php if (!$isSingle && !$isNotFound): ?><link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
+    <?php if ($isSearch): ?><meta name="robots" content="noindex,follow"><?php elseif ($isNotFound): ?><meta name="robots" content="noindex,noarchive"><?php endif; ?>
     <link rel="icon" href="<?php echo htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8'); ?>">
-    <link rel="sitemap" type="application/xml" title="Sitemap" href="<?php echo htmlspecialchars(suite_site_url($this->options) . '/sitemap.xml', ENT_QUOTES, 'UTF-8'); ?>">
-    <meta property="og:type" content="<?php echo $this->is('post') ? 'article' : 'website'; ?>">
-    <meta property="og:title" content="<?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?>">
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="<?php echo htmlspecialchars($siteUrl . '/sitemap.xml', ENT_QUOTES, 'UTF-8'); ?>">
+    <?php if (!$isNotFound): ?><meta property="og:type" content="<?php echo $isPost ? 'article' : 'website'; ?>">
+    <meta property="og:title" content="<?php echo htmlspecialchars($documentTitle, ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:description" content="<?php echo htmlspecialchars($archiveDescription ?: $siteDescription, ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:url" content="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:site_name" content="<?php echo htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'); ?>">
+    <meta property="og:locale" content="zh_CN">
     <?php if ($ogImage !== ''): ?><meta property="og:image" content="<?php echo htmlspecialchars($ogImage, ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?php echo htmlspecialchars($documentTitle, ENT_QUOTES, 'UTF-8'); ?>">
+    <meta name="twitter:description" content="<?php echo htmlspecialchars($archiveDescription ?: $siteDescription, ENT_QUOTES, 'UTF-8'); ?>">
     <?php if ($ogImage !== ''): ?><meta name="twitter:image" content="<?php echo htmlspecialchars($ogImage, ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
-    <?php if ($this->is('index')): ?>
-    <?php $schema = [
+    <?php if ($isPost && $publishedIso !== ''): ?><meta property="article:published_time" content="<?php echo htmlspecialchars($publishedIso, ENT_QUOTES, 'UTF-8'); ?>">
+    <?php if ($modifiedIso !== ''): ?><meta property="article:modified_time" content="<?php echo htmlspecialchars($modifiedIso, ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
+    <?php endif; ?>
+    <?php if (!$isNotFound): ?>
+    <?php
+    $breadcrumbItems = [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => '首页', 'item' => $siteUrl . '/'],
+    ];
+    if (!$isIndex) {
+        $breadcrumbItems[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $pageTitle, 'item' => $canonicalUrl];
+    }
+    $schemaGraph = [];
+    if ($isIndex) {
+        $schemaGraph[] = ['@type' => 'WebSite', 'name' => $siteName, 'url' => $siteUrl . '/', 'description' => $siteDescription];
+        $schemaGraph[] = ['@type' => 'Person', 'name' => $authorName, 'url' => $authorUrl];
+    } elseif ($isPost) {
+        $articleSchema = [
+            '@type' => 'BlogPosting',
+            '@id' => $canonicalUrl . '#article',
+            'url' => $canonicalUrl,
+            'headline' => (string) $this->title,
+            'description' => $archiveDescription,
+            'inLanguage' => 'zh-CN',
+            'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $canonicalUrl],
+            'author' => ['@type' => 'Person', 'name' => $authorName, 'url' => $authorUrl],
+            'publisher' => ['@type' => 'Person', 'name' => $authorName, 'url' => $authorUrl],
+        ];
+        if ($ogImage !== '') {
+            $articleSchema['image'] = [$ogImage];
+        }
+        if ($publishedIso !== '') {
+            $articleSchema['datePublished'] = $publishedIso;
+        }
+        if ($modifiedIso !== '') {
+            $articleSchema['dateModified'] = $modifiedIso;
+        }
+        $schemaGraph[] = $articleSchema;
+    } elseif ($isPage) {
+        $isAboutPage = strtolower((string) ($this->slug ?? '')) === 'about';
+        $schemaGraph[] = [
+            '@type' => $isAboutPage ? 'ProfilePage' : 'WebPage',
+            '@id' => $canonicalUrl,
+            'url' => $canonicalUrl,
+            'name' => $pageTitle,
+            'description' => $archiveDescription,
+            'inLanguage' => 'zh-CN',
+            'isPartOf' => ['@type' => 'WebSite', 'url' => $siteUrl . '/', 'name' => $siteName],
+        ];
+        if ($isAboutPage) {
+            $schemaGraph[] = ['@type' => 'Person', 'name' => $authorName, 'url' => $authorUrl];
+        }
+    }
+    $schemaGraph[] = ['@type' => 'BreadcrumbList', 'itemListElement' => $breadcrumbItems];
+    $schema = [
         '@context' => 'https://schema.org',
-        '@graph' => [
-            ['@type' => 'WebSite', 'name' => $siteName, 'url' => suite_site_url($this->options) . '/', 'description' => $siteDescription],
-            ['@type' => 'Person', 'name' => suite_option($this->options, 'authorName', '网站作者'), 'url' => suite_site_url($this->options) . '/about.html'],
-            ['@type' => 'BreadcrumbList', 'itemListElement' => [['@type' => 'ListItem', 'position' => 1, 'name' => '首页', 'item' => suite_site_url($this->options) . '/']]],
-        ],
+        '@graph' => $schemaGraph,
     ]; ?>
     <script type="application/ld+json"><?php echo json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?></script>
+    <?php endif; ?>
     <?php endif; ?>
     <?php $cookie = suite_cookie_config($this->options); $defaultTheme = suite_option($this->options, 'defaultTheme', 'system'); $cookie['defaultTheme'] = in_array($defaultTheme, ['light', 'dark', 'system'], true) ? $defaultTheme : 'system'; $cookie['motion'] = suite_flag($this->options, 'enableMotion', true) ? 'on' : 'off'; $cookieJson = json_encode($cookie, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
     <script>window.SuiteThemeConfig=<?php echo $cookieJson; ?>;(function(){var c=window.SuiteThemeConfig||{name:'suite-theme',domain:''},m=document.cookie.match(new RegExp('(?:^|;\\s*)'+c.name+'=(dark|light)(?:;|$)')),saved='';try{saved=localStorage.getItem(c.name)||'';}catch(e){}var t=m?m[1]:saved||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t;})();</script>

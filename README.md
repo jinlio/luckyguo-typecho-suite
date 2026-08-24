@@ -166,7 +166,7 @@ ls "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/panel.php"
 
 1. Sign in to Typecho Admin (`/admin/`).
 2. Open **控制台 → 外观 → suite-default → 启用** (Console → Appearance → suite-default → Enable).
-3. Open the theme settings page and fill in the identity/copy fields, profile and contact fields, avatar URL, favicon URL, Gravatar endpoint, banner/share/article cover URLs, article cover display switch, repository link, accent colour, theme cookie name and domain, default theme mode, page and reading widths, reading speed, site start time, the toggles for search, reading progress, code enhancements, motion, statistics, home widgets, article TOC, comments RSS, reading metadata, and Gravatar. The About page stack cards, current direction, writing direction, detailed introduction, contact email, image URLs, and all personal links are configurable from this page. Each field has placeholder text; leave anything you do not need empty.
+3. Open the theme settings page and fill in the identity/copy fields, homepage SEO title and description, profile and contact fields, avatar URL, favicon URL, Gravatar endpoint, banner/share/article cover URLs, article cover display switch, repository link, accent colour, theme cookie name and domain, default theme mode, page and reading widths, reading speed, site start time, the toggles for search, reading progress, code enhancements, motion, statistics, home widgets, article TOC, comments RSS, reading metadata, and Gravatar. The About page stack cards, current direction, writing direction, detailed introduction, contact email, image URLs, and all personal links are configurable from this page. Each field has placeholder text; leave anything you do not need empty.
 4. Save. On first activation the theme imports your Typecho site title and description plus the first administrator's display name, username, homepage, bio, and saved avatar URL. Subsequent saves do not overwrite values.
 
 **Verify.** Visit the home page and an article page. The header should show the site name you entered. Toggle the dark-mode switch; the choice should persist across reloads. Open the article page on a mobile-sized window (Chrome DevTools works) and confirm the TOC and hamburger menu appear.
@@ -447,7 +447,7 @@ After steps 1–7, run through this checklist from a fresh browser session. Any 
 The settings page exposes the following groups. Every switch is a graphical option; you do not need to edit theme files.
 
 **Identity and copy**
-- Site name, author name and handle, tagline.
+- Site name, author name and handle, tagline, plus the homepage SEO title and description. Empty SEO fields fall back to the site name and tagline.
 - About page: leading sentence, focus area, stack, status, module title, module subtitle, stack cards (name/icon/description), current direction, writing direction, contact email, and the long detailed introduction. The detailed introduction takes precedence over the page body when set.
 - Homepage eyebrow, signature, signature note, post list title and label.
 - Article author label and TOC label.
@@ -469,6 +469,7 @@ The settings page exposes the following groups. Every switch is a graphical opti
 
 **Site**
 - Site start time (used for the uptime display).
+- Article pages emit `BlogPosting` JSON-LD with author, image, publication/update times and breadcrumbs. Search result pages use `noindex,follow`; paginated pages use their own canonical URL. To override an individual article's search snippet, add a Typecho custom field named `seoDescription` or `metaDescription`.
 - Anonymous statistics toggle (requires the `suite_*` tables — see step 7).
 - Gravatar switch and endpoint for comment avatars. Off by default; comment avatars are rendered from the bundled local default SVG so visitor email hashes never leave your server. When enabled, use a reachable endpoint such as `https://gravatar.loli.net/avatar/` if the official endpoint is inaccessible.
 

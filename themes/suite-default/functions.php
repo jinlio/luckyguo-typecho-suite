@@ -14,6 +14,13 @@ function themeConfig($form)
     $form->addInput($text('authorName', '作者名称', '你的名字'));
     $form->addInput($text('authorHandle', '作者标识', 'username'));
     $form->addInput($text('tagline', '站点副标题', '记录正在发生的事'));
+    $form->addInput($text('seoHomeTitle', '首页 SEO 标题', '站点名称｜主题关键词'));
+    $seoHomeDescription = new \Typecho\Widget\Helper\Form\Element\Textarea(
+        'seoHomeDescription', null,
+        '用一句话说明站点主题，例如软件工程、大模型应用、Typecho 与部署运维实践。',
+        _t('首页 SEO 描述')
+    );
+    $form->addInput($seoHomeDescription);
     $form->addInput($text('aboutLead', '关于页引导语', '介绍这个站点、你的工作或正在探索的方向。'));
     $form->addInput($text('aboutFocus', '关于页方向', '按你的实际方向填写'));
     $form->addInput($text('aboutStack', '关于页技术栈', '按你的实际技术栈填写'));
@@ -403,6 +410,40 @@ function suite_entry_thumbnail($widget, $options): string
     return $thumbnail !== '' ? $thumbnail : suite_asset($options, 'articleCoverUrl');
 }
 
+function suite_entry_field($widget, array $names): string
+{
+    $fields = $widget->fields ?? null;
+    if (!$fields) {
+        return '';
+    }
+
+    foreach ($names as $name) {
+        $value = is_object($fields) ? ($fields->{$name} ?? '') : ($fields[$name] ?? '');
+        if (is_string($value) && trim($value) !== '') {
+            return trim($value);
+        }
+    }
+
+    return '';
+}
+
+function suite_entry_description($widget, $options, int $length = 180): string
+{
+    $custom = suite_entry_field($widget, ['seoDescription', 'metaDescription']);
+    if ($custom !== '') {
+        return suite_list_excerpt($custom, $length);
+    }
+
+    $text = trim((string) ($widget->text ?? ''));
+    if ($text === '') {
+        return '';
+    }
+
+    // Deployment notes are useful to readers but make poor search snippets.
+    $text = preg_replace('/^\s*<blockquote\b[^>]*>.*?<\/blockquote>\s*/is', '', $text, 1) ?? $text;
+    return suite_list_excerpt($text, $length);
+}
+
 function suite_meta_keywords($widget, $options): string
 {
     $keywords = [];
@@ -483,7 +524,8 @@ function suite_avatar_markup($options, string $className = ''): string
     if ($url !== '') {
         return '<img class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8')
             . '" src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
-            . '" alt="' . htmlspecialchars($author, ENT_QUOTES, 'UTF-8') . '">';
+            . '" alt="' . htmlspecialchars($author, ENT_QUOTES, 'UTF-8')
+            . '" width="72" height="72" decoding="async">';
     }
 
     return '<span class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8')
