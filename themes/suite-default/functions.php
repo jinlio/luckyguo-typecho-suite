@@ -20,6 +20,14 @@ function themeConfig($form)
     $form->addInput($text('aboutStatus', '关于页状态', '持续学习与构建'));
     $form->addInput($text('aboutStoryTitle', '关于页模块标题', '一些关于我的事'));
     $form->addInput($text('aboutStorySubtitle', '关于页模块副标题', '学习、实践，也记录过程。'));
+    $aboutStackItems = new \Typecho\Widget\Helper\Form\Element\Textarea(
+        'aboutStackItems', null,
+        "每行一个技术栈，格式：名称|图标文字或 HTTPS 图标地址|简短说明\nJava|https://raw.githubusercontent.com/devicons/devicon/master/icons/java/java-original.svg|后端开发\nPython|https://cdn.simpleicons.org/python|数据与 AI",
+        _t('关于页技术栈卡片')
+    );
+    $form->addInput($aboutStackItems);
+    $form->addInput($text('aboutDoing', '关于页正在做的事', '正在构建可靠的大模型应用与可复用工具。'));
+    $form->addInput($text('aboutWriting', '关于页写作方向', '大模型应用开发、落地实践与真实反馈'));
     $aboutBody = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'aboutBody',
         null,
@@ -49,11 +57,15 @@ function themeConfig($form)
         ['articleCoverUrl', '文章封面地址', '留空不显示文章封面'],
         ['landingUrl', '个人主页地址', 'https://example.com'],
         ['codeUrl', '代码仓库地址', 'https://github.com/username'],
+        ['ogImageUrl', '分享封面地址（1200×630）', 'https://example.com/og-image.jpg'],
+        ['faviconUrl', '网站图标地址', '留空使用主题默认图标'],
+        ['gravatarBaseUrl', 'Gravatar 地址', 'https://secure.gravatar.com/avatar/'],
     ] as [$name, $label, $placeholder]) {
         $input = $text($name, $label, $placeholder);
         $input->addRule('url', _t('请填写正确的网址'));
         $form->addInput($input);
     }
+    $form->addInput($text('contactEmail', '联系邮箱', 'you@example.com'));
 
     $accent = new \Typecho\Widget\Helper\Form\Element\Select(
         'accent',
@@ -107,6 +119,13 @@ function themeConfig($form)
         '5',
         _t('首页最近回复数量')
     ));
+    $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
+        'homeWidgetMode',
+        ['tags' => _t('标签云'), 'comments' => _t('最近回复')],
+        'tags',
+        _t('首页第三个模块')
+    ));
+    $form->addInput($text('siteKeywords', '首页核心关键词', '个人博客,软件工程,Java,Python,大模型应用'));
     $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
         'archiveLimit',
         ['500' => '500', '1000' => '1000', '2000' => '2000', '5000' => '5000'],
@@ -178,6 +197,12 @@ function themeConfig($form)
         ['1' => _t('在文章页显示右侧目录')],
         ['1'],
         _t('文章目录')
+    ))->multiMode());
+    $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'showArticleCover',
+        ['1' => _t('在文章顶部显示封面图片')],
+        [],
+        _t('文章顶部封面')
     ))->multiMode());
     $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
         'showCommentsFeed',
@@ -362,6 +387,90 @@ function suite_asset($options, string $name, string $fallback = ''): string
     return $value !== '' && preg_match('#^https?://#i', $value) ? $value : $fallback;
 }
 
+function suite_entry_thumbnail($widget, $options): string
+{
+    $fields = $widget->fields ?? null;
+    $thumbnail = '';
+    if ($fields) {
+        foreach (['thumbnail', 'cover', 'image'] as $field) {
+            $value = is_object($fields) ? ($fields->{$field} ?? '') : ($fields[$field] ?? '');
+            if (is_string($value) && preg_match('#^https?://#i', trim($value))) {
+                $thumbnail = trim($value);
+                break;
+            }
+        }
+    }
+    return $thumbnail !== '' ? $thumbnail : suite_asset($options, 'articleCoverUrl');
+}
+
+function suite_meta_keywords($widget, $options): string
+{
+    $keywords = [];
+    if ($widget && method_exists($widget, 'is') && ($widget->is('post') || $widget->is('page'))) {
+        $tags = is_array($widget->tags ?? null) ? $widget->tags : [];
+        foreach ($tags as $tag) {
+            $name = trim((string) ($tag['name'] ?? ''));
+            if ($name !== '') {
+                $keywords[] = $name;
+            }
+        }
+    }
+    if (!$keywords) {
+        $raw = suite_option($options, 'siteKeywords', '个人博客,软件工程,技术记录');
+        $keywords = preg_split('/[,，、\s]+/u', $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    }
+    return implode(',', array_values(array_unique(array_slice($keywords, 0, 20))));
+}
+
+function suite_site_url($options): string
+{
+    $siteUrl = trim((string) ($options->siteUrl ?? ''));
+    if ($siteUrl === '') {
+        ob_start();
+        $options->siteUrl();
+        $siteUrl = trim((string) ob_get_clean());
+    }
+    if ($siteUrl === '') {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        $siteUrl = $host !== '' ? $scheme . '://' . $host : '';
+    }
+    return rtrim($siteUrl, '/');
+}
+
+function suite_current_canonical($widget, $options = null): string
+{
+    $options = $options ?: \Widget\Options::alloc();
+    $base = suite_site_url($options) . '/';
+    if ($widget->is('index')) {
+        return rtrim($base, '/');
+    }
+    $permalink = trim((string) ($widget->permalink ?? ''));
+    if (preg_match('#^https?://#i', $permalink)) {
+        return strtok($permalink, '?');
+    }
+    $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+    return $base . ltrim($path, '/');
+}
+
+function suite_about_stack_items($options): array
+{
+    $raw = suite_option($options, 'aboutStackItems', "Java|https://raw.githubusercontent.com/devicons/devicon/master/icons/java/java-original.svg|后端服务\nSpring|https://cdn.simpleicons.org/spring|微服务与工程化\nPython|https://cdn.simpleicons.org/python|数据与 AI\nTypecho|https://raw.githubusercontent.com/typecho/typecho/master/admin/img/typecho-logo.svg|内容系统\nMeilisearch|https://cdn.simpleicons.org/meilisearch|站内搜索");
+    $items = [];
+    foreach (preg_split('/\R/u', $raw) ?: [] as $line) {
+        $parts = array_map('trim', explode('|', $line, 3));
+        if (($parts[0] ?? '') === '') {
+            continue;
+        }
+        $items[] = [
+            'name' => $parts[0],
+            'icon' => $parts[1] ?? strtoupper(substr($parts[0], 0, 1)),
+            'description' => $parts[2] ?? '',
+        ];
+    }
+    return $items;
+}
+
 function suite_avatar_markup($options, string $className = ''): string
 {
     $author = suite_option($options, 'authorName', '站点作者');
@@ -378,6 +487,23 @@ function suite_avatar_markup($options, string $className = ''): string
         . '" title="' . htmlspecialchars($author, ENT_QUOTES, 'UTF-8') . '">TS</span>';
 }
 
+function suite_gravatar_url(string $mail, int $size, ?string $rating, string $fallback, $options): string
+{
+    $base = suite_option($options, 'gravatarBaseUrl', 'https://secure.gravatar.com/avatar/');
+    if (!preg_match('#^https?://#i', $base)) {
+        $base = 'https://secure.gravatar.com/avatar/';
+    }
+    $base = rtrim($base, '/') . '/';
+    $params = ['s' => max(1, $size)];
+    if (is_string($rating) && $rating !== '') {
+        $params['r'] = $rating;
+    }
+    if ($fallback !== '') {
+        $params['d'] = $fallback;
+    }
+    return $base . md5(strtolower(trim($mail))) . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+}
+
 /**
  * Render comment avatars without making a third-party request by default.
  * Typecho invokes this hook before its built-in Gravatar renderer.
@@ -392,7 +518,7 @@ function suite_comments_gravatar(int $size = 32, ?string $rating = null, ?string
 
     if (suite_flag($options, 'useGravatar', false)) {
         $mail = isset($comments->mail) ? (string) $comments->mail : '';
-        $url = \Typecho\Common::gravatarUrl($mail, $size, $rating, $fallback, true);
+        $url = suite_gravatar_url($mail, $size, $rating, $fallback, $options);
         $fallbackAttr = ' data-avatar-fallback="' . htmlspecialchars($fallback, ENT_QUOTES, 'UTF-8') . '"';
         $fallbackAttr .= ' onerror="this.onerror=null;this.src=' . htmlspecialchars(json_encode($fallback, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') . '"';
     } else {

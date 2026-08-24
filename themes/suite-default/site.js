@@ -359,4 +359,19 @@
       });
     }
   }
+
+  document.querySelectorAll('.article-share').forEach((share) => {
+    const copy = share.querySelector('[data-share-copy]');
+    const toast = share.querySelector('[data-share-toast]');
+    copy?.addEventListener('click', async () => {
+      const url = share.dataset.shareUrl || location.href;
+      try {
+        await navigator.clipboard.writeText(url);
+        if (toast) toast.textContent = '链接已复制';
+      } catch (error) {
+        if (toast) toast.textContent = '请手动复制地址';
+      }
+      setTimeout(() => { if (toast) toast.textContent = ''; }, 2200);
+    });
+  });
 })();

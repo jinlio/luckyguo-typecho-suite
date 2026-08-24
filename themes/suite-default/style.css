@@ -426,6 +426,10 @@ html.page-leaving .site-footer { opacity: 0; transform: translateY(9px) scale(.9
 .recent-comment-list span { color: var(--ink-soft); font-size: 11px; }
 .native-widget-list > p,
 .recent-comment-list > p { margin: 0; padding: 16px 0; border-bottom: 1px solid var(--line); color: var(--ink-soft); font-size: 11px; }
+.tag-cloud-list { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; padding: 16px 0; }
+.tag-cloud-list a { display: inline-flex; align-items: baseline; gap: 4px; color: var(--ink-soft); font-size: calc(10px + (var(--tag-count, 1) * .65px)); font-weight: 700; }
+.tag-cloud-list a:hover { color: var(--accent-strong); }
+.tag-cloud-list small { color: var(--sage); font-size: 9px; font-weight: 700; }
 
 .article-shell { min-height: calc(100vh - 190px); padding: 50px 0 100px; }
 .back-link { display: inline-block; margin-bottom: 34px; color: var(--ink-soft); font-size: 12px; font-weight: 700; }
@@ -495,6 +499,17 @@ html.page-leaving .site-footer { opacity: 0; transform: translateY(9px) scale(.9
 .article-toc.is-mobile a { font-size: 11px; }
 .article-toc[hidden] { display: none !important; }
 .article-tags { max-width: var(--reading); display: flex; flex-wrap: wrap; gap: 10px; margin-top: 42px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--accent-strong); font-size: 11px; font-weight: 700; }
+.article-share { max-width: var(--reading); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 18px; color: var(--ink-soft); font-size: 10px; }
+.article-share > span:first-child { margin-right: 4px; color: var(--sage); font-size: 9px; font-weight: 800; letter-spacing: .1em; }
+.article-share button, .article-share a { display: inline-flex; align-items: center; min-height: 30px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 5px; background: transparent; color: var(--ink-soft); font: inherit; font-weight: 700; }
+.article-share button { cursor: pointer; }
+.article-share button:hover, .article-share a:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+.share-qr { position: relative; }
+.share-qr summary { display: inline-flex; align-items: center; min-height: 30px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 5px; cursor: pointer; font-weight: 700; list-style: none; }
+.share-qr summary::-webkit-details-marker { display: none; }
+.share-qr[open] summary { border-color: var(--accent); color: var(--accent-strong); }
+.share-qr img { position: absolute; z-index: 2; top: 38px; left: 0; width: 180px; height: 180px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.share-toast { min-height: 16px; color: var(--accent-strong); font-size: 10px; }
 .post-near { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 64px; padding-top: 26px; border-top: 1px solid var(--line); }
 .post-near div:last-child { text-align: right; }
 .post-near small, .post-near span { display: block; color: var(--ink-soft); font-size: 10px; }
@@ -523,6 +538,25 @@ html.page-leaving .site-footer { opacity: 0; transform: translateY(9px) scale(.9
 .about-copy p:first-child { padding-top: 0; border-top: 0; color: var(--ink); font-size: 20px; line-height: 1.9; }
 .about-copy p:last-child { border-bottom: 1px solid var(--line); }
 .about-copy a { color: var(--accent-strong); font-family: Inter, "PingFang SC", system-ui, sans-serif; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.about-panels { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr); gap: 52px; margin-top: 72px; padding-top: 28px; border-top: 2px solid var(--ink); }
+.about-panel-heading { margin-bottom: 20px; }
+.about-panel-heading .eyebrow { margin: 0 0 8px; }
+.about-panel-heading h2 { margin: 0; font-size: 21px; }
+.about-stack-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.about-stack-card { display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding: 15px 14px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); }
+.stack-icon { width: 28px; height: 28px; display: grid; flex: 0 0 auto; place-items: center; border-radius: 6px; background: var(--accent-soft); color: var(--accent-strong); font-size: 10px; font-weight: 800; }
+.about-stack-card img.stack-icon { padding: 5px; object-fit: contain; }
+.about-stack-card strong, .about-stack-card span { display: block; }
+.about-stack-card strong { font-size: 12px; }
+.about-stack-card div span { margin-top: 3px; color: var(--ink-soft); font-size: 10px; line-height: 1.5; }
+.about-direction-panel > p { margin: 0; padding: 14px 0; border-top: 1px solid var(--line); color: var(--ink-soft); font-family: Georgia, "Noto Serif CJK SC", "Songti SC", serif; font-size: 16px; line-height: 1.8; }
+.about-contact { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); }
+.about-contact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.about-contact-grid a { display: block; padding: 16px; border: 1px solid var(--line); border-radius: 7px; }
+.about-contact-grid a:hover { border-color: var(--accent); background: var(--surface-soft); }
+.about-contact-grid strong, .about-contact-grid span { display: block; }
+.about-contact-grid strong { font-size: 13px; }
+.about-contact-grid span { margin-top: 5px; color: var(--ink-soft); font-size: 10px; }
 .comments { max-width: var(--reading); margin-top: 72px; padding-top: 28px; border-top: 2px solid var(--ink); }
 .comments-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
 .comments-heading h2 { margin: 0; font-size: 20px; }
@@ -788,6 +822,7 @@ html.theme-switching body *::after {
     .archive-year { grid-template-columns: 92px minmax(0, 1fr); gap: 24px; }
     .archive-month { grid-template-columns: 62px minmax(0, 1fr); gap: 16px; }
     .about-masthead { grid-template-columns: 1fr; gap: 38px; }
+    .about-panels { grid-template-columns: 1fr; gap: 42px; }
 }
 
 @media (max-width: 560px) {
@@ -842,6 +877,8 @@ html.theme-switching body *::after {
     .about-copy { font-size: 16px; }
     .about-copy p { padding: 24px 0; }
     .about-copy p:first-child { font-size: 18px; }
+    .about-stack-grid, .about-contact-grid { grid-template-columns: 1fr; }
+    .about-panels, .about-contact { margin-top: 52px; }
     .post-near { grid-template-columns: 1fr; gap: 24px; }
     .post-near div:last-child { text-align: left; }
     .respond-form .form-grid { grid-template-columns: 1fr; gap: 0; }

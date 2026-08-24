@@ -22,8 +22,10 @@ $readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / $readingSpeed));
                 <?php endif; ?>
             </div>
         </header>
-        <?php $coverUrl = suite_asset($this->options, 'articleCoverUrl'); ?>
-        <?php if ($coverUrl !== ''): ?><figure class="article-cover"><img src="<?php echo htmlspecialchars($coverUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars(suite_option($this->options, 'articleCoverAlt', '文章封面'), ENT_QUOTES, 'UTF-8'); ?>" fetchpriority="high"></figure><?php endif; ?>
+        <?php if (suite_flag($this->options, 'showArticleCover', false)): ?>
+            <?php $coverUrl = suite_entry_thumbnail($this, $this->options); ?>
+            <?php if ($coverUrl !== ''): ?><figure class="article-cover"><img src="<?php echo htmlspecialchars($coverUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars(suite_option($this->options, 'articleCoverAlt', '文章封面'), ENT_QUOTES, 'UTF-8'); ?>" fetchpriority="high" decoding="async"></figure><?php endif; ?>
+        <?php endif; ?>
         <div class="article-layout">
             <div class="article-content" itemprop="articleBody"><?php $this->content(); ?></div>
             <aside class="article-aside">
@@ -40,6 +42,15 @@ $readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / $readingSpeed));
             </aside>
         </div>
         <div class="article-tags"><?php $this->tags('#', true, ''); ?></div>
+        <div class="article-share" data-share-url="<?php echo htmlspecialchars(suite_current_canonical($this, $this->options), ENT_QUOTES, 'UTF-8'); ?>" data-share-title="<?php echo htmlspecialchars((string) $this->title, ENT_QUOTES, 'UTF-8'); ?>" aria-label="分享文章">
+            <span>分享</span>
+            <button type="button" data-share-copy>复制链接</button>
+            <a href="https://twitter.com/intent/tweet?url=<?php echo rawurlencode(suite_current_canonical($this, $this->options)); ?>&text=<?php echo rawurlencode((string) $this->title); ?>" target="_blank" rel="noopener">X</a>
+            <a href="https://service.weibo.com/share/share.php?url=<?php echo rawurlencode(suite_current_canonical($this, $this->options)); ?>&title=<?php echo rawurlencode((string) $this->title); ?>" target="_blank" rel="noopener">微博</a>
+            <a href="https://t.me/share/url?url=<?php echo rawurlencode(suite_current_canonical($this, $this->options)); ?>&text=<?php echo rawurlencode((string) $this->title); ?>" target="_blank" rel="noopener">Telegram</a>
+            <details class="share-qr"><summary>二维码</summary><img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&amp;data=<?php echo rawurlencode(suite_current_canonical($this, $this->options)); ?>" alt="文章二维码" width="180" height="180" loading="lazy" decoding="async"></details>
+            <span class="share-toast" data-share-toast role="status" aria-live="polite"></span>
+        </div>
     </article>
     <?php $this->need('comments.php'); ?>
     <nav class="post-near" aria-label="相邻文章">

@@ -15,9 +15,10 @@
     </nav>
     <small><?php echo htmlspecialchars(suite_option($this->options, 'tagline', (string) $this->options->description), ENT_QUOTES, 'UTF-8'); ?> · <?php echo date('Y'); ?><?php if (suite_statistics_enabled($this->options)): ?> · 今日访客 <?php echo $footerStats['uv']; ?> · 累计访客 <?php echo $footerStats['total']; ?><?php endif; ?> · 已运行 <?php echo suite_uptime_text($this->options); ?></small>
 </footer>
-<script src="<?php $this->options->themeUrl('site.js?v=2.0.3'); ?>" defer></script>
+<script src="<?php $this->options->themeUrl('site.js?v=2.1.0'); ?>" defer></script>
 
-<?php if (suite_flag($this->options, 'showCodeEnhancements', true) && ($this->is('post') || $this->is('page'))): ?>
+<?php $codeSource = (string) ($this->text ?? ''); $hasCodeBlocks = preg_match('/(?:<pre\b|```|class=["\'][^"\']*language-)/i', $codeSource) === 1; ?>
+<?php if (suite_flag($this->options, 'showCodeEnhancements', true) && ($this->is('post') || $this->is('page')) && $hasCodeBlocks): ?>
 <script src="<?php $this->options->themeUrl('assets/prism-core.min.js?v=1.29.0'); ?>" defer></script>
 <script src="<?php $this->options->themeUrl('assets/prism-autoloader.min.js?v=1.29.0'); ?>" data-autoloader-path="<?php $this->options->themeUrl('assets/prism/'); ?>" defer></script>
 <script src="<?php $this->options->themeUrl('assets/prism-line-numbers.min.js?v=1.29.0'); ?>" defer></script>

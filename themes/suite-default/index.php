@@ -81,18 +81,23 @@ $this->need('header.php');
         <?php \Widget\Metas\Category\Rows::alloc()->to($categories); ?>
         <?php \Widget\Contents\Post\Date::alloc('type=month&format=Y 年 m 月&limit=6')->to($months); ?>
         <?php $recentCommentsCount = suite_int_option($this->options, 'recentCommentsCount', 5, 1, 20); ?>
-        <?php \Widget\Comments\Recent::alloc('pageSize=' . $recentCommentsCount)->to($recentComments); ?>
+        <?php $homeWidgetMode = suite_option($this->options, 'homeWidgetMode', 'tags'); ?>
+        <?php if ($homeWidgetMode === 'comments'): ?><?php \Widget\Comments\Recent::alloc('pageSize=' . $recentCommentsCount)->to($recentComments); ?><?php else: ?><?php \Widget\Metas\Tag\Cloud::alloc('ignoreZeroCount=1&limit=18')->to($tags); ?><?php endif; ?>
         <?php if (suite_flag($this->options, 'showHomeWidgets', true)): ?>
         <section class="typecho-widgets" aria-label="站点浏览">
             <section class="native-widget">
                 <div class="native-widget-heading"><strong>分类</strong><span>CATEGORIES</span></div>
                 <div class="native-widget-list">
+                    <?php $hasVisibleCategory = false; ?>
                     <?php if ($categories->have()): ?>
                         <?php while ($categories->next()): ?>
+                            <?php if ((int) $categories->count <= 0) { continue; } ?>
+                            <?php $hasVisibleCategory = true; ?>
                             <?php $categoryLevel = (int) $categories->levels; ?>
                             <a class="category-link" data-level="<?php echo $categoryLevel; ?>" style="--category-level: <?php echo $categoryLevel; ?>;" href="<?php $categories->permalink(); ?>"><span><?php $categories->name(); ?></span><small><?php $categories->count(); ?></small></a>
                         <?php endwhile; ?>
-                    <?php else: ?>
+                    <?php endif; ?>
+                    <?php if (!$hasVisibleCategory): ?>
                         <p>暂无分类</p>
                     <?php endif; ?>
                 </div>
@@ -110,16 +115,23 @@ $this->need('header.php');
                 </div>
             </section>
             <section class="native-widget">
-                <div class="native-widget-heading"><strong>最近回复</strong><span>COMMENTS</span></div>
-                <div class="recent-comment-list">
-                    <?php if ($recentComments->have()): ?>
-                        <?php while ($recentComments->next()): ?>
-                            <a href="<?php $recentComments->permalink(); ?>"><strong><?php $recentComments->author(false); ?></strong><span><?php $recentComments->excerpt(34, '…'); ?></span></a>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <p>暂无回复</p>
-                    <?php endif; ?>
-                </div>
+                <?php if ($homeWidgetMode === 'comments'): ?>
+                    <div class="native-widget-heading"><strong>最近回复</strong><span>COMMENTS</span></div>
+                    <div class="recent-comment-list">
+                        <?php if ($recentComments->have()): ?>
+                            <?php while ($recentComments->next()): ?>
+                                <a href="<?php $recentComments->permalink(); ?>"><strong><?php $recentComments->author(false); ?></strong><span><?php $recentComments->excerpt(34, '…'); ?></span></a>
+                            <?php endwhile; ?>
+                        <?php else: ?><p>暂无回复</p><?php endif; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="native-widget-heading"><strong>标签云</strong><span>TAGS</span></div>
+                    <div class="tag-cloud-list">
+                        <?php if ($tags->have()): ?>
+                            <?php while ($tags->next()): ?><a href="<?php $tags->permalink(); ?>" style="--tag-count: <?php echo max(1, min(5, (int) $tags->count)); ?>"><?php $tags->name(); ?><small><?php echo (int) $tags->count; ?></small></a><?php endwhile; ?>
+                        <?php else: ?><p>暂无标签</p><?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </section>
         </section>
         <?php endif; ?>
