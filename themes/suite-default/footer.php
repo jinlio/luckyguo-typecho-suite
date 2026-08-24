@@ -17,7 +17,7 @@
 </footer>
 <script src="<?php $this->options->themeUrl('site.js?v=2.1.0'); ?>" defer></script>
 
-<?php $codeSource = (string) ($this->text ?? ''); $hasCodeBlocks = preg_match('/(?:<pre\b|```|class=["\'][^"\']*language-)/i', $codeSource) === 1; ?>
+<?php $codeSource = ($this->is('post') || $this->is('page')) ? (string) ($this->text ?? '') : ''; $hasCodeBlocks = preg_match('/(?:<pre\b|```|class=["\'][^"\']*language-)/i', $codeSource) === 1; ?>
 <?php if (suite_flag($this->options, 'showCodeEnhancements', true) && ($this->is('post') || $this->is('page')) && $hasCodeBlocks): ?>
 <script src="<?php $this->options->themeUrl('assets/prism-core.min.js?v=1.29.0'); ?>" defer></script>
 <script src="<?php $this->options->themeUrl('assets/prism-autoloader.min.js?v=1.29.0'); ?>" data-autoloader-path="<?php $this->options->themeUrl('assets/prism/'); ?>" defer></script>

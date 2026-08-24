@@ -9,8 +9,11 @@ if ($archiveDescription === '') {
     $this->setArchiveDescription($archiveDescription);
 }
 $canonicalUrl = suite_current_canonical($this, $this->options);
+$isSingle = $this->is('single') && !$this->is('index');
 $siteName = suite_option($this->options, 'siteName', (string) $this->options->title);
 $siteDescription = suite_option($this->options, 'tagline', (string) $this->options->description);
+$pageTitle = trim((string) ($this->getArchiveTitle() ?? ''));
+$pageTitle = $pageTitle !== '' ? $pageTitle : $siteName;
 $ogImage = ($this->is('post') || $this->is('page')) ? suite_entry_thumbnail($this, $this->options) : suite_asset($this->options, 'ogImageUrl');
 if ($ogImage === '') {
     $ogImage = suite_asset($this->options, 'ogImageUrl');
@@ -30,11 +33,11 @@ $favicon = suite_asset($this->options, 'faviconUrl', (string) $this->options->th
     <title><?php $this->archiveTitle('', '', ' · '); ?><?php $this->options->title(); ?></title>
     <meta name="description" content="<?php echo htmlspecialchars($archiveDescription, ENT_QUOTES, 'UTF-8'); ?>">
     <meta name="keywords" content="<?php echo htmlspecialchars($keywords, ENT_QUOTES, 'UTF-8'); ?>">
-    <link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>">
+    <?php if (!$isSingle): ?><link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
     <link rel="icon" href="<?php echo htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8'); ?>">
     <link rel="sitemap" type="application/xml" title="Sitemap" href="<?php echo htmlspecialchars(suite_site_url($this->options) . '/sitemap.xml', ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:type" content="<?php echo $this->is('post') ? 'article' : 'website'; ?>">
-    <meta property="og:title" content="<?php echo htmlspecialchars((string) $this->title, ENT_QUOTES, 'UTF-8'); ?>">
+    <meta property="og:title" content="<?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:description" content="<?php echo htmlspecialchars($archiveDescription ?: $siteDescription, ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:url" content="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:site_name" content="<?php echo htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'); ?>">
@@ -60,7 +63,7 @@ $favicon = suite_asset($this->options, 'faviconUrl', (string) $this->options->th
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/mac-code.css?v=1.1.4'); ?>">
     <?php echo suite_layout_style($this->options); ?>
     <?php echo suite_custom_accent_style($this->options); ?>
-    <?php $this->header(); ?>
+    <?php $this->header('description=0&keywords=0&social=0'); ?>
 </head>
 <body class="<?php echo suite_accent_class($this->options) . (suite_custom_accent($this->options) !== '' ? ' suite-custom-accent' : '') . (!suite_flag($this->options, 'enableMotion', true) ? ' suite-no-motion' : ''); ?>">
 <a class="skip-link" href="#main-content">跳到主要内容</a>

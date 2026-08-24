@@ -442,12 +442,16 @@ function suite_current_canonical($widget, $options = null): string
 {
     $options = $options ?: \Widget\Options::alloc();
     $base = suite_site_url($options) . '/';
-    if ($widget->is('index')) {
+    if (method_exists($widget, 'is') && $widget->is('index')) {
         return rtrim($base, '/');
     }
-    $permalink = trim((string) ($widget->permalink ?? ''));
-    if (preg_match('#^https?://#i', $permalink)) {
-        return strtok($permalink, '?');
+    // 404 and malformed requests have no Typecho route type; never resolve permalink there.
+    $isEntry = method_exists($widget, 'is') && ($widget->is('post') || $widget->is('page'));
+    if ($isEntry) {
+        $permalink = trim((string) ($widget->permalink ?? ''));
+        if (preg_match('#^https?://#i', $permalink)) {
+            return strtok($permalink, '?');
+        }
     }
     $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
     return $base . ltrim($path, '/');
