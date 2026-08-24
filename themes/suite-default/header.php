@@ -8,7 +8,8 @@ $currentPage = method_exists($this, 'getCurrentPage') ? (int) $this->getCurrentP
 $isFrontPage = $isIndex && $currentPage <= 1;
 $isSingle = method_exists($this, 'is') && $this->is('single') && !$isIndex;
 $isNotFound = (method_exists($this, 'is') && $this->is('404'))
-    || (function_exists('http_response_code') && http_response_code() === 404);
+    || (function_exists('http_response_code') && http_response_code() === 404)
+    || ((int) ($this->archiveSlug ?? 0) === 404 && (string) ($this->themeFile ?? '') === '404.php');
 $siteUrl = suite_site_url($this->options);
 $siteName = suite_option($this->options, 'siteName', (string) $this->options->title);
 $siteDescription = suite_option($this->options, 'tagline', (string) $this->options->description);
