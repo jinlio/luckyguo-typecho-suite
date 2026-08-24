@@ -483,7 +483,8 @@ function suite_current_canonical($widget, $options = null): string
 {
     $options = $options ?: \Widget\Options::alloc();
     $base = suite_site_url($options) . '/';
-    if (method_exists($widget, 'is') && $widget->is('index')) {
+    $currentPage = method_exists($widget, 'getCurrentPage') ? (int) $widget->getCurrentPage() : 1;
+    if (method_exists($widget, 'is') && $widget->is('index') && $currentPage <= 1) {
         return rtrim($base, '/');
     }
     // 404 and malformed requests have no Typecho route type; never resolve permalink there.

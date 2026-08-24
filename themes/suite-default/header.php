@@ -4,15 +4,18 @@ $isIndex = method_exists($this, 'is') && $this->is('index');
 $isPost = method_exists($this, 'is') && $this->is('post');
 $isPage = method_exists($this, 'is') && $this->is('page');
 $isSearch = method_exists($this, 'is') && $this->is('search');
+$currentPage = method_exists($this, 'getCurrentPage') ? (int) $this->getCurrentPage() : 1;
+$isFrontPage = $isIndex && $currentPage <= 1;
 $isSingle = method_exists($this, 'is') && $this->is('single') && !$isIndex;
-$isNotFound = function_exists('http_response_code') && http_response_code() === 404;
+$isNotFound = (method_exists($this, 'is') && $this->is('404'))
+    || (function_exists('http_response_code') && http_response_code() === 404);
 $siteUrl = suite_site_url($this->options);
 $siteName = suite_option($this->options, 'siteName', (string) $this->options->title);
 $siteDescription = suite_option($this->options, 'tagline', (string) $this->options->description);
 $homeTitle = suite_option($this->options, 'seoHomeTitle', '');
 $homeDescription = suite_option($this->options, 'seoHomeDescription', $siteDescription);
 $archiveDescription = trim((string) ($this->getArchiveDescription() ?? ''));
-if ($isIndex) {
+if ($isFrontPage) {
     $archiveDescription = $homeDescription;
 } elseif ($isPost || $isPage) {
     $entryDescription = suite_entry_description($this, $this->options);
@@ -30,7 +33,7 @@ if ($archiveDescription === '') {
 $canonicalUrl = suite_current_canonical($this, $this->options);
 $pageTitle = trim((string) ($this->getArchiveTitle() ?? ''));
 $pageTitle = $pageTitle !== '' ? $pageTitle : $siteName;
-$documentTitle = $isIndex
+$documentTitle = $isFrontPage
     ? ($homeTitle !== '' ? $homeTitle : $siteName)
     : ($pageTitle === $siteName ? $siteName : $pageTitle . ' · ' . $siteName);
 $ogImage = ($isPost || $isPage) ? suite_entry_thumbnail($this, $this->options) : suite_asset($this->options, 'ogImageUrl');
@@ -81,11 +84,11 @@ $modifiedIso = $modifiedAt > 0 ? date(DATE_ATOM, $modifiedAt) : $publishedIso;
     $breadcrumbItems = [
         ['@type' => 'ListItem', 'position' => 1, 'name' => '首页', 'item' => $siteUrl . '/'],
     ];
-    if (!$isIndex) {
+    if (!$isFrontPage) {
         $breadcrumbItems[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $pageTitle, 'item' => $canonicalUrl];
     }
     $schemaGraph = [];
-    if ($isIndex) {
+    if ($isFrontPage) {
         $schemaGraph[] = ['@type' => 'WebSite', 'name' => $siteName, 'url' => $siteUrl . '/', 'description' => $siteDescription];
         $schemaGraph[] = ['@type' => 'Person', 'name' => $authorName, 'url' => $authorUrl];
     } elseif ($isPost) {
