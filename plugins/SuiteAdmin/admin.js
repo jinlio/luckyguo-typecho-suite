@@ -44,6 +44,38 @@
         }
     }
 
+    function initCategoryHierarchy() {
+        var parents = config.categoryParents || {};
+        var inputs = document.querySelectorAll('input[name="category[]"]');
+        if (!inputs.length || !Object.keys(parents).length) { return; }
+        var byValue = {};
+        Array.prototype.forEach.call(inputs, function (input) {
+            byValue[String(input.value)] = input;
+        });
+
+        function ensureParents() {
+            Array.prototype.forEach.call(inputs, function (input) {
+                if (!input.checked) { return; }
+                var parent = parents[String(input.value)];
+                var guard = 0;
+                while (parent && guard++ < 32) {
+                    var parentInput = byValue[String(parent)];
+                    if (!parentInput) { break; }
+                    parentInput.checked = true;
+                    parent = parents[String(parent)];
+                }
+            });
+        }
+
+        Array.prototype.forEach.call(inputs, function (input) {
+            input.addEventListener('change', ensureParents);
+        });
+        if (inputs[0].form) {
+            inputs[0].form.addEventListener('submit', ensureParents);
+        }
+        ensureParents();
+    }
+
     function init() {
         var op = document.querySelector('.typecho-head-nav .operate');
         if (op && !op.querySelector('.lg-theme-toggle')) {
@@ -59,6 +91,7 @@
             op.appendChild(b);
         }
         setTheme(getTheme(), false);
+        initCategoryHierarchy();
     }
 
     if (document.readyState === 'loading') {
