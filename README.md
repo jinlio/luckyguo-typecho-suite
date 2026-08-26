@@ -4,6 +4,9 @@
 
 > **[English](README.md)** · **[简体中文](README.zh-CN.md)**
 
+> [!TIP]
+> This project is under fast iteration — APIs, file layout, and settings may change between versions. If you hit any issue, please open a [GitHub issue](https://github.com/jinlio/luckyguo-typecho-suite/issues). Feature requests and ideas from theme users are equally welcome — you can also reach me directly via the email shown on the [demo blog's about page](https://blog.luckyguo.dpdns.org/about.html).
+
 Reusable, configurable Typecho components for personal blogs and small content sites. It contains a neutral responsive theme, an optional administrator skin, a sitemap plugin, Meilisearch integration with a MySQL fallback, an authenticated read-only monitoring panel, optional anonymous statistics, deployment scripts and systemd units, and a separate Typecho 1.3.0 SSRF hardening patch.
 
 This repository contains no personal domain, author identity, production database, uploads, credentials, server keys, or complete Typecho core. Configure site-specific values in Typecho or in files outside the web root.
