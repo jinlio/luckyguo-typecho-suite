@@ -5,7 +5,7 @@
 > **[English](README.md)** · **[简体中文](README.zh-CN.md)**
 
 > [!TIP]
-> 本项目仍在快速迭代中，版本间 API、目录结构与配置可能调整。遇到任何问题请及时提 [GitHub Issue](https://github.com/jinlio/luckyguo-typecho-suite/issues)；喜欢本主题的用户也欢迎提出想要的功能或 idea，也可以直接通过[演示博客关于页](https://blog.luckyguo.dpdns.org/about.html)展示的邮箱联系我。
+> 本项目仍在快速迭代中，版本间 API、目录结构与配置可能调整。遇到任何问题请及时提 [GitHub Issue](https://github.com/jinlio/luckyguo-typecho-suite/issues)；喜欢本主题的用户也欢迎提出想要的功能或想法/点子，也可以直接通过[演示博客关于页](https://blog.luckyguo.dpdns.org/about.html)展示的邮箱联系我。
 
 一组可复用、可配置的 Typecho 主题和插件，适合个人博客、小型内容站点及自托管部署。它包含一套中性响应式主题、可选的后台皮肤、站点地图、Meilisearch 集成、只读监控面板、可选的匿名访问统计、部署脚本与 systemd 单元，以及一份独立的 Typecho 1.3.0 SSRF 加固补丁。
 
