@@ -231,6 +231,21 @@ function themeConfig($form)
     ))->multiMode());
 }
 
+/**
+ * Keep tag navigation and archive indexing aligned with Sitemap's threshold.
+ * The fallback keeps the theme usable when Sitemap is not installed.
+ */
+function suite_tag_min_posts($options = null): int
+{
+    try {
+        $settings = $options ? $options->plugin('Sitemap') : null;
+        $value = (int) ($settings->tagMinPosts ?? 2);
+        return max(1, min(100, $value ?: 2));
+    } catch (\Throwable $e) {
+        return 2;
+    }
+}
+
 function suite_option($options, string $name, string $fallback): string
 {
     $value = $options->$name ?? '';

@@ -17,7 +17,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  *
  * @package Sitemap
  * @author luckyguo
- * @version 1.1.0
+ * @version 1.2.0
  * @since 1.2.1
  * @link https://github.com/joyqi/typecho-plugin-sitemap
  */
@@ -64,8 +64,22 @@ final class Plugin implements PluginInterface
             _t('更新频率')
         );
 
+        $tagMinPosts = new Form\Element\Select(
+            'tagMinPosts',
+            [
+                '1' => _t('至少 1 篇文章'),
+                '2' => _t('至少 2 篇文章'),
+                '3' => _t('至少 3 篇文章'),
+                '5' => _t('至少 5 篇文章'),
+                '10' => _t('至少 10 篇文章'),
+            ],
+            '2',
+            _t('标签页最低文章数')
+        );
+
         $form->addInput($sitemapBlock->multiMode());
         $form->addInput($updateFreq);
+        $form->addInput($tagMinPosts);
     }
 
     public static function personalConfig(Form $form): void

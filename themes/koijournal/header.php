@@ -45,6 +45,8 @@ if ($ogImage === '') {
     $ogImage = suite_asset($this->options, 'bannerUrl', (string) $this->options->themeUrl('assets/og-default.png', $this->options->theme));
 }
 $keywords = suite_meta_keywords($this, $this->options);
+$isThinTag = $this->is('tag') && method_exists($this, 'getTotal')
+    && $this->getTotal() < suite_tag_min_posts($this->options);
 $favicon = suite_asset($this->options, 'faviconUrl', (string) $this->options->themeUrl('assets/favicon.svg', $this->options->theme));
 $authorName = suite_option($this->options, 'authorName', '网站作者');
 $authorUrl = $siteUrl . '/about.html';
@@ -63,7 +65,7 @@ $modifiedIso = $modifiedAt > 0 ? date(DATE_ATOM, $modifiedAt) : $publishedIso;
     <meta name="description" content="<?php echo htmlspecialchars($archiveDescription, ENT_QUOTES, 'UTF-8'); ?>">
     <meta name="keywords" content="<?php echo htmlspecialchars($keywords, ENT_QUOTES, 'UTF-8'); ?>">
     <?php if (!$isSingle && !$isNotFound): ?><link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
-    <?php if ($isSearch): ?><meta name="robots" content="noindex,follow"><?php elseif ($isNotFound): ?><meta name="robots" content="noindex,noarchive"><?php endif; ?>
+    <?php if ($isSearch || $isThinTag): ?><meta name="robots" content="noindex,follow"><?php elseif ($isNotFound): ?><meta name="robots" content="noindex,noarchive"><?php endif; ?>
     <link rel="icon" href="<?php echo htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8'); ?>">
     <link rel="sitemap" type="application/xml" title="Sitemap" href="<?php echo htmlspecialchars($siteUrl . '/sitemap.xml', ENT_QUOTES, 'UTF-8'); ?>">
     <?php if (!$isNotFound): ?><meta property="og:type" content="<?php echo $isPost ? 'article' : 'website'; ?>">

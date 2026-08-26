@@ -82,7 +82,8 @@ $this->need('header.php');
         <?php \Widget\Contents\Post\Date::alloc('type=month&format=Y 年 m 月&limit=6')->to($months); ?>
         <?php $recentCommentsCount = suite_int_option($this->options, 'recentCommentsCount', 5, 1, 20); ?>
         <?php $homeWidgetMode = suite_option($this->options, 'homeWidgetMode', 'tags'); ?>
-        <?php if ($homeWidgetMode === 'comments'): ?><?php \Widget\Comments\Recent::alloc('pageSize=' . $recentCommentsCount)->to($recentComments); ?><?php else: ?><?php \Widget\Metas\Tag\Cloud::alloc('ignoreZeroCount=1&limit=18')->to($tags); ?><?php endif; ?>
+        <?php $tagMinPosts = suite_tag_min_posts($this->options); ?>
+        <?php if ($homeWidgetMode === 'comments'): ?><?php \Widget\Comments\Recent::alloc('pageSize=' . $recentCommentsCount)->to($recentComments); ?><?php else: ?><?php \Widget\Metas\Tag\Cloud::alloc('ignoreZeroCount=1&limit=50')->to($tags); ?><?php endif; ?>
         <?php if (suite_flag($this->options, 'showHomeWidgets', true)): ?>
         <section class="typecho-widgets" aria-label="站点浏览">
             <section class="native-widget">
@@ -128,7 +129,13 @@ $this->need('header.php');
                     <div class="native-widget-heading"><strong>标签云</strong><span>TAGS</span></div>
                     <div class="tag-cloud-list">
                         <?php if ($tags->have()): ?>
-                            <?php while ($tags->next()): ?><a href="<?php $tags->permalink(); ?>" style="--tag-count: <?php echo max(1, min(5, (int) $tags->count)); ?>"><?php $tags->name(); ?><small><?php echo (int) $tags->count; ?></small></a><?php endwhile; ?>
+                            <?php $visibleTags = 0; ?>
+                            <?php while ($tags->next() && $visibleTags < 18): ?>
+                                <?php if ((int) $tags->count < $tagMinPosts) { continue; } ?>
+                                <?php $visibleTags++; ?>
+                                <a href="<?php $tags->permalink(); ?>" style="--tag-count: <?php echo max(1, min(5, (int) $tags->count)); ?>"><?php $tags->name(); ?><small><?php echo (int) $tags->count; ?></small></a>
+                            <?php endwhile; ?>
+                            <?php if ($visibleTags === 0): ?><p>暂无符合条件的标签</p><?php endif; ?>
                         <?php else: ?><p>暂无标签</p><?php endif; ?>
                     </div>
                 <?php endif; ?>

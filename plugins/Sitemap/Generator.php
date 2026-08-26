@@ -28,6 +28,10 @@ final class Generator extends Contents
         $updateFreq = in_array($settings->updateFreq, ['daily', 'weekly', 'monthly'], true)
             ? $settings->updateFreq
             : 'daily';
+        $configuredTagMinPosts = (int) ($settings->tagMinPosts ?? 0);
+        $tagMinPosts = $configuredTagMinPosts > 0
+            ? min(100, $configuredTagMinPosts)
+            : 2;
 
         $entries = [];
         $latestModified = 0;
@@ -76,6 +80,9 @@ final class Generator extends Contents
             $tags = Cloud::alloc(['ignoreZeroCount' => true]);
 
             while (count($entries) < self::MAX_URLS - 1 && $tags->next()) {
+                if ((int) $tags->count < $tagMinPosts) {
+                    continue;
+                }
                 $entries[] = $this->urlEntry($tags->permalink, null, $updateFreq, '0.4');
             }
         }

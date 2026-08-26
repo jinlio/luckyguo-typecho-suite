@@ -197,14 +197,15 @@ curl -sI "$TYPECHO_ROOT/../" | grep -i set-cookie
 
 1. 进入 **控制台 → 插件 → Sitemap → 启用**。
 2. 打开插件设置，勾选需要暴露的内容类型（`生成文章链接`、`生成独立页面链接`、`生成分类链接`、`生成标签链接`），并在 `更新频率` 中选择 `每天`、`每周` 或 `每月或更久`。
-3. 保存。
-4. 把站点地图地址加入 `robots.txt`：
+3. 启用标签链接时，在 `标签页最低文章数` 中选择收录阈值（默认至少 2 篇文章）；低于阈值的标签页仍可访问，但会标记为 `noindex,follow`。
+4. 保存。
+5. 把站点地图地址加入 `robots.txt`：
 
    ```
    Sitemap: https://yourdomain.com/sitemap.xml
    ```
 
-**验证**：站点地图路由已对外开放，返回标准 XML。密码保护的文章和空分类/空标签会自动跳过；单个文件最多 50,000 个 URL。
+**验证**：站点地图路由已对外开放，返回标准 XML。密码保护的文章、空分类/空标签和低于标签阈值的标签会自动跳过；单个文件最多 50,000 个 URL。
 
 ```sh
 curl -fsS https://yourdomain.com/sitemap.xml | head
@@ -513,8 +514,9 @@ SuiteAdmin 不依赖 SuiteMonitor，也不强制启用前端主题，只负责�
 | --- | --- | --- |
 | `站点地图显示` | `生成文章链接`、`生成独立页面链接`、`生成分类链接`、`生成标签链接` | 全部勾选 |
 | `更新频率` | `每天`、`每周`、`每月或更久` | `每天` |
+| `标签页最低文章数` | 标签页进入 Sitemap 所需的最少文章数 | `2` |
 
-生成器基于 `joyqi/typecho-plugin-sitemap` v1.0.0（MIT 协议，保留在 `plugins/Sitemap/LICENSE`）。密码保护的文章与空分类/空标签会自动跳过；单个站点地图最多 50,000 个 URL。响应头包含 `Cache-Control: public, max-age=300, stale-while-revalidate=60`。
+生成器基于 `joyqi/typecho-plugin-sitemap` v1.0.0（MIT 协议，保留在 `plugins/Sitemap/LICENSE`）。密码保护的文章、空分类/空标签以及低于 `标签页最低文章数` 的标签会自动跳过；主题首页标签云使用相同阈值，低于阈值的标签归档页输出 `noindex,follow`。单个站点地图最多 50,000 个 URL，响应头包含 `Cache-Control: public, max-age=300, stale-while-revalidate=60`。
 
 ### SuiteSearch
 

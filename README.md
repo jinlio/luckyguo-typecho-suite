@@ -197,14 +197,15 @@ curl -sI "$TYPECHO_ROOT/../" | grep -i set-cookie
 
 1. In Typecho Admin, open **控制台 → 插件 → Sitemap → 启用**.
 2. Open the plugin settings. Tick the content types you want exposed (`posts`, `pages`, `categories`, `tags`). Pick `更新频率` (`daily`, `weekly`, or `每月或更久`).
-3. Save.
-4. Add the sitemap URL to your `robots.txt`:
+3. When tag URLs are enabled, choose `标签页最低文章数` (minimum posts per tag, default `2`). Below-threshold tag archives remain reachable but are marked `noindex,follow`.
+4. Save.
+5. Add the sitemap URL to your `robots.txt`:
 
    ```
    Sitemap: https://yourdomain.com/sitemap.xml
    ```
 
-**Verify.** The route is now public and returns XML. Password-protected posts and empty taxonomies are excluded automatically; the cap is 50,000 URLs per file.
+**Verify.** The route is now public and returns XML. Password-protected posts, empty taxonomies, and tags below the configured threshold are excluded automatically; the cap is 50,000 URLs per file.
 
 ```sh
 curl -fsS https://yourdomain.com/sitemap.xml | head
@@ -514,8 +515,9 @@ Install path: `usr/plugins/Sitemap`. Activation registers a public `/sitemap.xml
 | --- | --- | --- |
 | `站点地图显示` | `生成文章链接`, `生成独立页面链接`, `生成分类链接`, `生成标签链接` | All four ticked |
 | `更新频率` | `每天`, `每周`, `每月或更久` | `每天` |
+| `标签页最低文章数` | Minimum posts required for a tag archive to enter the Sitemap | `2` |
 
-The generator is based on `joyqi/typecho-plugin-sitemap` v1.0.0 (MIT, retained in `plugins/Sitemap/LICENSE`). Password-protected posts and empty taxonomies are skipped; a single sitemap is capped at 50,000 URLs. The XML response is served with `Cache-Control: public, max-age=300, stale-while-revalidate=60`.
+The generator is based on `joyqi/typecho-plugin-sitemap` v1.0.0 (MIT, retained in `plugins/Sitemap/LICENSE`). Password-protected posts, empty taxonomies, and tags below `标签页最低文章数` are skipped; the theme tag cloud uses the same threshold, and below-threshold tag archives emit `noindex,follow`. A single sitemap is capped at 50,000 URLs. The XML response is served with `Cache-Control: public, max-age=300, stale-while-revalidate=60`.
 
 ### SuiteSearch
 
