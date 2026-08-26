@@ -41,7 +41,7 @@ $readingMinutes = max(1, (int) ceil(($readingUnits ?: 0) / $readingSpeed));
                 <?php endif; ?>
             </aside>
         </div>
-        <div class="article-tags"><?php $this->tags('#', true, ''); ?></div>
+        <div class="article-tags"><?php ob_start(); $this->tags(' #', true, ''); $tagMarkup = ob_get_clean(); ?><?php if ($tagMarkup !== ''): ?>#<?php echo $tagMarkup; ?><?php endif; ?></div>
         <div class="article-share" data-share-url="<?php echo htmlspecialchars(suite_current_canonical($this, $this->options), ENT_QUOTES, 'UTF-8'); ?>" data-share-title="<?php echo htmlspecialchars((string) $this->title, ENT_QUOTES, 'UTF-8'); ?>" aria-label="分享文章">
             <span>分享</span>
             <button type="button" data-share-copy>复制链接</button>

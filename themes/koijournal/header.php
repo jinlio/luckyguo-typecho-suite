@@ -140,7 +140,7 @@ $modifiedIso = $modifiedAt > 0 ? date(DATE_ATOM, $modifiedAt) : $publishedIso;
     <?php $cookie = suite_cookie_config($this->options); $defaultTheme = suite_option($this->options, 'defaultTheme', 'system'); $cookie['defaultTheme'] = in_array($defaultTheme, ['light', 'dark', 'system'], true) ? $defaultTheme : 'system'; $cookie['motion'] = suite_flag($this->options, 'enableMotion', true) ? 'on' : 'off'; $cookieJson = json_encode($cookie, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
     <script>window.SuiteThemeConfig=<?php echo $cookieJson; ?>;(function(){var c=window.SuiteThemeConfig||{name:'suite-theme',domain:''},m=document.cookie.match(new RegExp('(?:^|;\\s*)'+c.name+'=(dark|light)(?:;|$)')),saved='';try{saved=localStorage.getItem(c.name)||'';}catch(e){}var t=m?m[1]:saved||((matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');document.documentElement.dataset.theme=t;})();</script>
     <script>(function(){var c=window.SuiteThemeConfig||{},hasCookie=document.cookie.indexOf(c.name+'=')!==-1,saved='';try{saved=localStorage.getItem(c.name)||'';}catch(e){}if(!hasCookie&&saved!=='dark'&&saved!=='light'&&(c.defaultTheme==='dark'||c.defaultTheme==='light'))document.documentElement.dataset.theme=c.defaultTheme;})();</script>
-    <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css?v=1.7.0'); ?>">
+    <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css?v=1.8.0'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/comment-form.css?v=1.0.0'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/mac-code.css?v=1.1.4'); ?>">
     <?php echo suite_layout_style($this->options); ?>
