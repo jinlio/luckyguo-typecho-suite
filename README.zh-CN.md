@@ -518,6 +518,10 @@ SuiteAdmin 不依赖 SuiteMonitor，也不强制启用前端主题，只负责�
 
 生成器基于 `joyqi/typecho-plugin-sitemap` v1.0.0（MIT 协议，保留在 `plugins/Sitemap/LICENSE`）。密码保护的文章、空分类/空标签以及低于 `标签页最低文章数` 的标签会自动跳过；主题首页标签云使用相同阈值，低于阈值的标签归档页输出 `noindex,follow`。单个站点地图最多 50,000 个 URL，响应头包含 `Cache-Control: public, max-age=300, stale-while-revalidate=60`。
 
+### 文章置顶
+
+在 Typecho 后台编辑或新建文章时，打开右侧的“选项”面板，勾选“置顶文章”，保存或发布即可。置顶文章使用 Typecho 原生排序字段，会在首页文章列表中排在普通文章前面；取消勾选并保存即可恢复正常排序。
+
 ### SuiteSearch
 
 [](#suitesearch)

@@ -51,7 +51,7 @@ $this->need('header.php');
                 <div class="post-date"><span class="post-sequence"><?php printf('%02d', $postIndex++); ?></span><time datetime="<?php $this->date('c'); ?>"><?php $this->date('Y.m.d'); ?></time></div>
                 <div class="post-main">
                     <div class="post-kicker"><?php if ($postMeta['categories']): ?><?php foreach ($postMeta['categories'] as $categoryIndex => $category): ?><?php echo $categoryIndex ? ' / ' : ''; ?><a href="<?php echo htmlspecialchars($category['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8'); ?></a><?php endforeach; ?><?php else: ?>未分类<?php endif; ?></div>
-                    <h2><a href="<?php $this->permalink(); ?>"><?php $this->title(); ?></a></h2>
+                    <h2><?php if ((int) $this->order > 0): ?><span class="post-sticky">置顶</span> <?php endif; ?><a href="<?php $this->permalink(); ?>"><?php $this->title(); ?></a></h2>
                     <div class="post-summary"><?php echo htmlspecialchars(suite_list_excerpt((string) $this->text, suite_int_option($this->options, 'homeExcerptLength', 150, 40, 400)), ENT_QUOTES, 'UTF-8'); ?></div>
                     <div class="post-meta">
                         <span><?php $this->commentsNum('暂无评论', '1 条评论', '%d 条评论'); ?></span>

@@ -360,6 +360,7 @@ html.page-leaving .site-footer { opacity: 0; transform: translateY(9px) scale(.9
 .post-main h2 { margin: 6px 0 7px; font-size: 25px; line-height: 1.35; }
 .post-main h2 a { display: block; }
 .post-main h2 a:hover { color: var(--accent-strong); }
+.post-sticky { display: inline-block; padding: 2px 6px; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent-strong); font-size: 10px; line-height: 1.4; vertical-align: middle; }
 .post-summary { max-width: 740px; color: var(--ink-soft); font-size: 13px; }
 .post-summary p { margin: 0; }
 .post-meta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 13px; color: var(--ink-soft); font-size: 10px; font-weight: 700; }

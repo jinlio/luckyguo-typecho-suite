@@ -519,6 +519,10 @@ Install path: `usr/plugins/Sitemap`. Activation registers a public `/sitemap.xml
 
 The generator is based on `joyqi/typecho-plugin-sitemap` v1.0.0 (MIT, retained in `plugins/Sitemap/LICENSE`). Password-protected posts, empty taxonomies, and tags below `标签页最低文章数` are skipped; the theme tag cloud uses the same threshold, and below-threshold tag archives emit `noindex,follow`. A single sitemap is capped at 50,000 URLs. The XML response is served with `Cache-Control: public, max-age=300, stale-while-revalidate=60`.
 
+### Pinning posts
+
+When editing or creating a post in Typecho Admin, open the right-side Options panel and tick the “置顶文章” checkbox, then save or publish. Pinned posts use Typecho's native ordering field and appear before regular posts on the homepage. Clear the checkbox and save to restore normal ordering.
+
 ### SuiteSearch
 
 [](#suitesearch)

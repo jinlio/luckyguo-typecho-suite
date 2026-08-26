@@ -23,6 +23,9 @@ class Plugin implements PluginInterface
     public static function activate()
     {
         \Typecho\Plugin::factory('admin/header.php')->header = __CLASS__ . '::header';
+        \Typecho\Plugin::factory('admin/write-post.php')->option = __CLASS__ . '::postOption';
+        \Typecho\Plugin::factory('Widget\Contents\Post\Edit')->write = __CLASS__ . '::postWrite';
+        \Typecho\Plugin::factory('Widget\Archive')->handleInit = __CLASS__ . '::archiveInit';
         return _t('后台换肤已启用');
     }
 
@@ -84,6 +87,37 @@ class Plugin implements PluginInterface
             'system',
             _t('后台默认主题模式')
         ));
+    }
+
+    /** Add the post-level sticky switch to Typecho's native editor. */
+    public static function postOption($post): void
+    {
+        $sticky = '0';
+        try {
+            $sticky = (string) ($post->fields->sticky ?? '0');
+        } catch (\Throwable $e) {
+            // A new post may not have a fields object yet.
+        }
+        echo '<section class="typecho-post-option suite-sticky-option">'
+            . '<label class="typecho-label" for="suite-sticky">' . _t('文章排序') . '</label>'
+            . '<p><label><input type="checkbox" id="suite-sticky" name="fields[sticky]" value="1"'
+            . ($sticky === '1' ? ' checked="checked"' : '') . '> ' . _t('置顶文章') . '</label></p>'
+            . '<p class="description">' . _t('置顶文章会排在首页文章列表最前面。') . '</p>'
+            . '</section>';
+    }
+
+    /** Persist the checkbox as Typecho's native numeric ordering value. */
+    public static function postWrite(array $contents, \Widget\Contents\Post\Edit $widget): array
+    {
+        $fields = $widget->request->getArray('fields');
+        $contents['order'] = (string) ($fields['sticky'] ?? '') === '1' ? 1 : 0;
+        return $contents;
+    }
+
+    /** Put sticky posts before regular posts while retaining date ordering within each group. */
+    public static function archiveInit(\Widget\Archive $archive, \Typecho\Db\Query $select): void
+    {
+        $select->order('table.contents.order', \Typecho\Db::SORT_DESC);
     }
 
     public static function personalConfig(Form $form)
