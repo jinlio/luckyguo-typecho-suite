@@ -46,7 +46,7 @@ This repository contains no personal domain, author identity, production databas
 
 | Path | Purpose | Required |
 | --- | --- | --- |
-| `themes/suite-default` | Responsive theme, dark mode, article TOC, code blocks, branding settings | No plugin |
+| `themes/koijournal` | Responsive theme, dark mode, article TOC, code blocks, branding settings | No plugin |
 | `plugins/SuiteAdmin` | Optional administrator light/dark skin, shares the theme cookie | No |
 | `plugins/Sitemap` | Public `/sitemap.xml` route, content types and update frequency | No |
 | `plugins/SuiteSearch` | Meilisearch search with parameterised MySQL `LIKE` fallback and a rebuild queue | No |
@@ -145,7 +145,7 @@ TYPECHO_ROOT=/var/www/typecho
 git clone --depth 1 https://github.com/jinlio/luckyguo-typecho-suite.git /tmp/typecho-suite
 
 # Always
-rsync -a /tmp/typecho-suite/themes/suite-default/   "$TYPECHO_ROOT/usr/themes/suite-default/"
+rsync -a /tmp/typecho-suite/themes/koijournal/   "$TYPECHO_ROOT/usr/themes/koijournal/"
 
 # Optional, copy only what you will enable
 rsync -a /tmp/typecho-suite/plugins/SuiteAdmin/     "$TYPECHO_ROOT/usr/plugins/SuiteAdmin/"
@@ -159,7 +159,7 @@ Keep `/tmp/typecho-suite` around so you can rerun `rsync` after pulling updates.
 **Verify.** Each copied directory contains the expected files:
 
 ```sh
-ls "$TYPECHO_ROOT/usr/themes/suite-default/functions.php"
+ls "$TYPECHO_ROOT/usr/themes/koijournal/functions.php"
 ls "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/panel.php"
 ```
 
@@ -168,7 +168,7 @@ ls "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/panel.php"
 [](#2-enable-the-theme)
 
 1. Sign in to Typecho Admin (`/admin/`).
-2. Open **控制台 → 外观 → suite-default → 启用** (Console → Appearance → suite-default → Enable).
+2. Open **控制台 → 外观 → koijournal → 启用** (Console → Appearance → koijournal → Enable).
 3. Open the theme settings page and fill in the identity/copy fields, homepage SEO title and description, profile and contact fields, avatar URL, favicon URL, Gravatar endpoint, banner/share/article cover URLs, article cover display switch, repository link, accent colour, theme cookie name and domain, default theme mode, page and reading widths, reading speed, site start time, the toggles for search, reading progress, code enhancements, motion, statistics, home widgets, article TOC, comments RSS, reading metadata, and Gravatar. The About page stack cards, current direction, writing direction, detailed introduction, contact email, image URLs, and all personal links are configurable from this page. Each field has placeholder text; leave anything you do not need empty.
 4. Save. On first activation the theme imports your Typecho site title and description plus the first administrator's display name, username, homepage, bio, and saved avatar URL. Subsequent saves do not overwrite values.
 
@@ -384,7 +384,7 @@ The theme can record anonymous page views and visitor counts. Statistics are off
    sed 's/typecho_/your_prefix_/g' deploy/create-suite-stats.sql | mysql your_typecho_db
    ```
 
-2. In **外观 → suite-default → 设置**, tick `启用访问统计`.
+2. In **外观 → koijournal → 设置**, tick `启用访问统计`.
 3. In **控制台 → SuiteMonitor → 设置**, tick `博客访问统计` if you want the numbers shown on the monitor panel. The `monitor_ro` user needs `SELECT` on the Typecho database for this to work.
 
 **Verify.** Visit the home page a couple of times. Then check the counters:
@@ -647,8 +647,8 @@ bash -n deploy/monitor-log-collect.sh
 bash -n deploy/monitor-prune.sh
 bash -n deploy/install-monitor.sh
 bash -n deploy/check-install.sh
-node --check themes/suite-default/site.js
-node --check themes/suite-default/assets/mac-code.js
+node --check themes/koijournal/site.js
+node --check themes/koijournal/assets/mac-code.js
 node --check plugins/SuiteAdmin/admin.js
 ```
 

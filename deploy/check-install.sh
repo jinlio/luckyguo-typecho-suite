@@ -22,7 +22,7 @@ else
   fail "找不到 $ROOT/config.inc.php"
 fi
 
-if [[ -d "$ROOT/usr/themes/suite-default" ]]; then
+if [[ -d "$ROOT/usr/themes/koijournal" ]]; then
   ok "Suite Default 主题已安装"
 else
   warn "Suite Default 主题目录不存在"
@@ -48,8 +48,8 @@ if command -v php >/dev/null 2>&1; then
 fi
 
 for file in \
-  "$ROOT/usr/themes/suite-default/functions.php" \
-  "$ROOT/usr/themes/suite-default/site.js" \
+  "$ROOT/usr/themes/koijournal/functions.php" \
+  "$ROOT/usr/themes/koijournal/site.js" \
   "$ROOT/usr/plugins/SuiteMonitor/Plugin.php" \
   "$ROOT/usr/plugins/SuiteMonitor/panel.php"; do
   [[ -f "$file" ]] || continue

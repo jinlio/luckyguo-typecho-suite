@@ -13,8 +13,8 @@ else
 fi
 
 if command -v node >/dev/null 2>&1; then
-  node --check themes/suite-default/site.js
-  node --check themes/suite-default/assets/mac-code.js
+  node --check themes/koijournal/site.js
+  node --check themes/koijournal/assets/mac-code.js
   node --check plugins/SuiteAdmin/admin.js
 fi
 
@@ -28,7 +28,7 @@ if rg -n -i 'dpdns|锦鲤小果|guoc|typecho_luckyguo|/etc/luckyguo|/var/lib/mon
   exit 1
 fi
 
-if find themes/suite-default -maxdepth 1 -type f \( -name 'avatar.*' -o -name 'favicon*' -o -name 'apple-touch-icon*' -o -name 'journal-banner.*' -o -name 'article-cover.*' \) | grep -q .; then
+if find themes/koijournal -maxdepth 1 -type f \( -name 'avatar.*' -o -name 'favicon*' -o -name 'apple-touch-icon*' -o -name 'journal-banner.*' -o -name 'article-cover.*' \) | grep -q .; then
   echo 'personal theme media must not be included in the reusable package' >&2
   exit 1
 fi

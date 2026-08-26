@@ -5,7 +5,7 @@
 > **[English](README.md)** · **[简体中文](README.zh-CN.md)**
 
 > [!TIP]
-> 本项目仍在快速迭代中，版本间 API、目录结构与配置可能调整。遇到任何问题请及时提 [GitHub Issue](https://github.com/jinlio/luckyguo-typecho-suite/issues)；喜欢本主题的用户也欢迎提出想要的功能或想法/点子，也可以直接通过[演示博客关于页](https://blog.luckyguo.dpdns.org/about.html)展示的邮箱联系我。
+> 本项目仍在快速迭代中，版本间 API、目录结构与配置可能调整。遇到问题欢迎随时提 [GitHub Issue](https://github.com/jinlio/luckyguo-typecho-suite/issues)；如果喜欢这个主题，想要的功能和点子也尽管提出来，或通过[演示博客关于页](https://blog.luckyguo.dpdns.org/about.html)展示的邮箱直接联系我。
 
 一组可复用、可配置的 Typecho 主题和插件，适合个人博客、小型内容站点及自托管部署。它包含一套中性响应式主题、可选的后台皮肤、站点地图、Meilisearch 集成、只读监控面板、可选的匿名访问统计、部署脚本与 systemd 单元，以及一份独立的 Typecho 1.3.0 SSRF 加固补丁。
 
@@ -46,7 +46,7 @@
 
 | 路径 | 作用 | 必需 |
 | --- | --- | --- |
-| `themes/suite-default` | 响应式主题、深色模式、文章目录、代码块和品牌配置 | 无插件依赖 |
+| `themes/koijournal` | 响应式主题、深色模式、文章目录、代码块和品牌配置 | 无插件依赖 |
 | `plugins/SuiteAdmin` | 可选 Typecho 后台浅色/深色皮肤，共享主题 Cookie | 否 |
 | `plugins/Sitemap` | `/sitemap.xml` 站点地图、内容类型与更新频率 | 否 |
 | `plugins/SuiteSearch` | Meilisearch 搜索、参数化 MySQL `LIKE` 降级和重建队列 | 否 |
@@ -145,7 +145,7 @@ TYPECHO_ROOT=/var/www/typecho
 git clone --depth 1 https://github.com/jinlio/luckyguo-typecho-suite.git /tmp/typecho-suite
 
 # 主题始终需要
-rsync -a /tmp/typecho-suite/themes/suite-default/   "$TYPECHO_ROOT/usr/themes/suite-default/"
+rsync -a /tmp/typecho-suite/themes/koijournal/   "$TYPECHO_ROOT/usr/themes/koijournal/"
 
 # 下面四个按需复制
 rsync -a /tmp/typecho-suite/plugins/SuiteAdmin/     "$TYPECHO_ROOT/usr/plugins/SuiteAdmin/"
@@ -159,7 +159,7 @@ rsync -a /tmp/typecho-suite/plugins/SuiteMonitor/  "$TYPECHO_ROOT/usr/plugins/Su
 **验证**：每个被复制的目录都能看到关键文件：
 
 ```sh
-ls "$TYPECHO_ROOT/usr/themes/suite-default/functions.php"
+ls "$TYPECHO_ROOT/usr/themes/koijournal/functions.php"
 ls "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/panel.php"
 ```
 
@@ -168,7 +168,7 @@ ls "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/panel.php"
 [](#2-启用主题)
 
 1. 登录 Typecho 后台 `/admin/`。
-2. 进入 **控制台 → 外观 → suite-default → 启用**。
+2. 进入 **控制台 → 外观 → koijournal → 启用**。
 3. 打开主题设置页，按顺序填写身份与文案、首页 SEO 标题与描述、资料与联系方式、头像地址、网站图标地址、Gravatar 地址、首页横幅/分享封面/文章封面地址、文章顶部封面显示开关、个人主页与代码仓库链接、强调色、主题 Cookie 名称与域名、默认主题模式、页面与正文宽度、阅读速度、站点起始时间，以及搜索入口、阅读进度、代码增强、页面动画、访问统计、首页附加模块、文章目录、评论 RSS、阅读信息、Gravatar 等开关。关于页技术栈卡片、正在做的事、写作方向、详细简介、联系邮箱和所有个人链接都可在此配置。每个字段都有占位说明，不需要的可以留空。
 4. 保存。首次启用时，主题会从 Typecho 基本设置和首个管理员资料导入站点标题、站点描述、昵称、用户名、个人主页、个人简介和已保存的头像地址；已有设置不会被覆盖。
 
@@ -383,7 +383,7 @@ sudo tail -n 50 /var/log/typecho-suite-monitor.log
    sed 's/typecho_/your_prefix_/g' deploy/create-suite-stats.sql | mysql your_typecho_db
    ```
 
-2. 在 **外观 → suite-default → 设置** 中勾选 `启用访问统计`。
+2. 在 **外观 → koijournal → 设置** 中勾选 `启用访问统计`。
 3. 若要在监控面板里展示博客统计，进入 **控制台 → SuiteMonitor → 设置** 勾选 `博客访问统计`。前提是 `monitor_ro` 账号对 Typecho 库拥有 `SELECT`。
 
 **验证**：多次访问首页后查询计数器：
@@ -646,8 +646,8 @@ bash -n deploy/monitor-log-collect.sh
 bash -n deploy/monitor-prune.sh
 bash -n deploy/install-monitor.sh
 bash -n deploy/check-install.sh
-node --check themes/suite-default/site.js
-node --check themes/suite-default/assets/mac-code.js
+node --check themes/koijournal/site.js
+node --check themes/koijournal/assets/mac-code.js
 node --check plugins/SuiteAdmin/admin.js
 ```
 

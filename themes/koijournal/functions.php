@@ -295,7 +295,7 @@ function suite_import_default_profile(array &$settings, bool $isInit): bool
         $options = \Widget\Options::alloc();
         $db = \Typecho\Db::get();
         $existing = $db->fetchRow($db->select('name')->from('table.options')
-            ->where('name = ? AND user = ?', 'theme:suite-default', 0)->limit(1));
+            ->where('name = ? AND user = ?', 'theme:koijournal', 0)->limit(1));
         if ($existing) {
             return false;
         }
@@ -341,13 +341,13 @@ function suite_persist_theme_settings(array $settings): bool
             return false;
         }
         $exists = $db->fetchRow($db->select('name')->from('table.options')
-            ->where('name = ? AND user = ?', 'theme:suite-default', 0)->limit(1));
+            ->where('name = ? AND user = ?', 'theme:koijournal', 0)->limit(1));
         if ($exists) {
             $db->query($db->update('table.options')->rows(['value' => $value])
-                ->where('name = ? AND user = ?', 'theme:suite-default', 0));
+                ->where('name = ? AND user = ?', 'theme:koijournal', 0));
         } else {
             $db->query($db->insert('table.options')->rows([
-                'name' => 'theme:suite-default',
+                'name' => 'theme:koijournal',
                 'value' => $value,
                 'user' => 0,
             ]));
