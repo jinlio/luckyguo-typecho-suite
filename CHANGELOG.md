@@ -2,6 +2,9 @@
 
 ## 2026-08-27
 
+- Fixed theme asset handling when site-specific avatar, banner, or cover URLs point to files that are no longer present on the current deployment. Same-origin missing files now fall back to the theme default instead of rendering broken images; external user-provided URLs remain untouched.
+- Restored and verified the site's configured avatar, homepage banner, and article cover on production. Home, article, About, archives, categories, category, search, 404, RSS, and Sitemap smoke checks completed without new PHP/Nginx errors; 375px light/dark checks show no horizontal overflow and all same-origin images decode successfully.
+
 - Replaced the planned navigation bridge with the new `SuiteCore` capability router. KoiJournal now declares stable page capability IDs, exposes GUI toggles for Home/Categories/Archives/About, and renders the theme-owned `/categories/` overview through its handler and `categories.php` template.
 - Added public-category sitemap integration independent of navigation visibility, filtered to visible published posts with direct category counts, and documented the SuiteCore install, route lifecycle, and navigation behavior in both README files.
 - Verification: `git diff --check`, JavaScript syntax check, static checks, target-server PHP lint, production `/categories/`/navigation/Sitemap HTTP checks, and post-request Nginx error-log review.

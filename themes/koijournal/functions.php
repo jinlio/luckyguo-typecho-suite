@@ -557,7 +557,20 @@ function suite_int_option($options, string $name, int $fallback, int $minimum, i
 function suite_asset($options, string $name, string $fallback = ''): string
 {
     $value = suite_option($options, $name, '');
-    return $value !== '' && preg_match('#^https?://#i', $value) ? $value : $fallback;
+    if ($value === '' || !preg_match('#^https?://#i', $value)) {
+        return $fallback;
+    }
+    // Avoid emitting broken URLs left behind by a removed local theme asset.
+    $siteHost = parse_url(suite_site_url($options), PHP_URL_HOST);
+    $assetHost = parse_url($value, PHP_URL_HOST);
+    $path = parse_url($value, PHP_URL_PATH);
+    if ($siteHost && $assetHost && strcasecmp($siteHost, $assetHost) === 0 && is_string($path) && strpos($path, '..') === false) {
+        $root = rtrim((string) (defined('__TYPECHO_ROOT_DIR__') ? __TYPECHO_ROOT_DIR__ : ''), '/');
+        if ($root !== '' && !is_file($root . '/' . ltrim($path, '/'))) {
+            return $fallback;
+        }
+    }
+    return $value;
 }
 
 function suite_entry_thumbnail($widget, $options): string
