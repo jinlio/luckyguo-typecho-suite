@@ -803,7 +803,7 @@ function suite_is_bot(): bool
         return false;
     }
     $keywords = [
-        'bot', 'crawler', 'spider', 'slurp', 'scan', 'python', 'curl', 'wget', 'httpclient',
+        'bot', 'crawler', 'spider', 'slurp', 'scan', 'python', 'curl', 'wget', 'httpclient', 'go-http-client',
         'headless', 'semrush', 'ahrefs', 'mj12', 'petal', 'bytespider', 'gptbot', 'claudebot',
         'ccbot', 'chatgpt', 'facebookexternalhit', 'telegrambot', 'twitterbot', 'whatsapp',
         'monitor', 'uptimerobot', 'pingdom', 'zabbix', 'nagios'

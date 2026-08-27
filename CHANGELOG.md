@@ -2,6 +2,8 @@
 
 ## 2026-08-27
 
+- Corrected visitor filtering for Go's default `Go-http-client/*` User-Agent so DNS/probe requests are excluded from visitor statistics.
+
 - Optimized the Typecho post-editor category selector: selecting a child category now selects its parent chain, while clearing a parent category clears every descendant selection.
 
 - Fixed theme asset handling when site-specific avatar, banner, or cover URLs point to files that are no longer present on the current deployment. Same-origin missing files now fall back to the theme default instead of rendering broken images; external user-provided URLs remain untouched.
