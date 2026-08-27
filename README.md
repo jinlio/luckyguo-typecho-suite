@@ -21,7 +21,8 @@ This repository contains no personal domain, author identity, production databas
 - [Quick start](#quick-start)
   - [0. Prerequisites and backups](#0-prerequisites-and-backups)
   - [1. Copy the reusable files](#1-copy-the-reusable-files)
-  - [2. Enable the theme](#2-enable-the-theme)
+- [2. Enable the theme](#2-enable-the-theme)
+- [2.1 Enable SuiteCore](#21-enable-suitecore)
   - [3. Enable SuiteAdmin (optional)](#3-enable-suiteadmin-optional)
   - [4. Enable Sitemap (optional)](#4-enable-sitemap-optional)
   - [5. Enable SuiteSearch (optional)](#5-enable-suitesearch-optional)
@@ -47,6 +48,7 @@ This repository contains no personal domain, author identity, production databas
 | Path | Purpose | Required |
 | --- | --- | --- |
 | `themes/koijournal` | Responsive theme, dark mode, article TOC, code blocks, branding settings | No plugin |
+| `plugins/SuiteCore` | Theme capability registry and theme-owned routes (currently the category overview) | KoiJournal category page |
 | `plugins/SuiteAdmin` | Optional administrator light/dark skin, shares the theme cookie | No |
 | `plugins/Sitemap` | Public `/sitemap.xml` route, content types and update frequency | No |
 | `plugins/SuiteSearch` | Meilisearch search with parameterised MySQL `LIKE` fallback and a rebuild queue | No |
@@ -147,6 +149,9 @@ git clone --depth 1 https://github.com/jinlio/luckyguo-typecho-suite.git /tmp/ty
 # Always
 rsync -a /tmp/typecho-suite/themes/koijournal/   "$TYPECHO_ROOT/usr/themes/koijournal/"
 
+# SuiteCore provides the /categories/ route
+rsync -a /tmp/typecho-suite/plugins/SuiteCore/     "$TYPECHO_ROOT/usr/plugins/SuiteCore/"
+
 # Optional, copy only what you will enable
 rsync -a /tmp/typecho-suite/plugins/SuiteAdmin/     "$TYPECHO_ROOT/usr/plugins/SuiteAdmin/"
 rsync -a /tmp/typecho-suite/plugins/Sitemap/        "$TYPECHO_ROOT/usr/plugins/Sitemap/"
@@ -173,6 +178,14 @@ ls "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/panel.php"
 4. Save. On first activation the theme imports your Typecho site title and description plus the first administrator's display name, username, homepage, bio, and saved avatar URL. Subsequent saves do not overwrite values.
 
 **Verify.** Visit the home page and an article page. The header should show the site name you entered. Toggle the dark-mode switch; the choice should persist across reloads. Open the article page on a mobile-sized window (Chrome DevTools works) and confirm the TOC and hamburger menu appear.
+
+### 2.1 Enable SuiteCore
+
+1. In Typecho Admin, open **控制台 → 插件 → SuiteCore → 启用** (Console → Plugins → SuiteCore → Enable).
+2. SuiteCore only registers theme capability routes and delegates rendering to the active theme. KoiJournal's category handler loads `categories.php`.
+3. In the theme settings, choose which preset items appear in the navigation: Home, Categories, Archives, and About. The saved configuration uses stable capability IDs rather than labels or URLs.
+
+**Verify.** Open `/categories/` and confirm a 200 response with the category overview. If SuiteCore is missing, disabled, or the path is occupied, the theme hides Categories and direct requests return the normal 404 page.
 
 ### 3. Enable SuiteAdmin (optional)
 

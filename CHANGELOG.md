@@ -2,6 +2,10 @@
 
 ## 2026-08-27
 
+- Replaced the planned navigation bridge with the new `SuiteCore` capability router. KoiJournal now declares stable page capability IDs, exposes GUI toggles for Home/Categories/Archives/About, and renders the theme-owned `/categories/` overview through its handler and `categories.php` template.
+- Added public-category sitemap integration independent of navigation visibility, filtered to visible published posts with direct category counts, and documented the SuiteCore install, route lifecycle, and navigation behavior in both README files.
+- Verification: `git diff --check`, JavaScript syntax check, static checks, target-server PHP lint, production `/categories/`/navigation/Sitemap HTTP checks, and post-request Nginx error-log review.
+
 - Added a native Typecho post-editor checkbox for pinning articles; pinned posts use the built-in contents.order field and appear before regular posts while preserving date order.
 - Added a visible 置顶 marker to the homepage list and documented the editor workflow.
 - Verification: PHP lint, static checks, fresh-post save/publish field handling, homepage ordering, and mobile/desktop smoke checks.

@@ -612,6 +612,13 @@ html.page-leaving .site-footer { opacity: 0; transform: translateY(9px) scale(.9
 .archive-row strong { font-size: 15px; }
 .archive-row:hover strong { color: var(--accent-strong); }
 .archives-page { max-width: 900px; }
+.categories-page { max-width: 900px; }
+.categories-intro { max-width: 560px; margin-top: 12px; color: var(--ink-soft); font-size: 13px; line-height: 1.8; }
+.category-overview { margin-top: 42px; border-top: 1px solid var(--line); }
+.category-overview-row { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 12px 0 calc(12px + var(--category-level, 0) * 24px); border-bottom: 1px solid var(--line); color: var(--ink); }
+.category-overview-row span { font-size: 16px; font-weight: 750; }
+.category-overview-row small { color: var(--ink-soft); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.category-overview-row:hover { background: var(--surface-soft); color: var(--accent-strong); }
 .error-page { min-height: calc(100vh - 176px); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
 .error-page h1 { margin: 10px 0; font-size: 46px; }
 .error-page > p:not(.eyebrow) { color: var(--ink-soft); }

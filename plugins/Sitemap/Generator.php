@@ -7,6 +7,8 @@ use Widget\Contents\Page\Rows;
 use Widget\Contents\Post\Recent;
 use Widget\Metas\Category\Rows as CategoryRows;
 use Widget\Metas\Tag\Cloud;
+use Typecho\Router;
+use TypechoPlugin\SuiteCore\Plugin as SuiteCorePlugin;
 
 if (!defined('__TYPECHO_ROOT_DIR__')) {
     exit;
@@ -85,6 +87,33 @@ final class Generator extends Contents
                 }
                 $entries[] = $this->urlEntry($tags->permalink, null, $updateFreq, '0.4');
             }
+        }
+
+        // Theme-owned public capabilities are independent from navigation visibility.
+        $hasCategoryOverview = false;
+        if (count($entries) < self::MAX_URLS - 1) {
+            if (!class_exists(SuiteCorePlugin::class)) {
+                $suiteCoreFile = rtrim((string) $this->options->pluginDir, '/') . '/SuiteCore/Plugin.php';
+                if (is_file($suiteCoreFile)) {
+                    require_once $suiteCoreFile;
+                }
+            }
+        }
+        if (count($entries) < self::MAX_URLS - 1 && class_exists(SuiteCorePlugin::class)) {
+            foreach (SuiteCorePlugin::publicCapabilities($this->options) as $capability) {
+                $path = ltrim((string) ($capability['path'] ?? ''), '/');
+                if ($path === '') {
+                    continue;
+                }
+                if ($path === 'categories/') {
+                    $hasCategoryOverview = true;
+                }
+                $entries[] = $this->urlEntry(rtrim((string) $this->options->siteUrl, '/') . '/' . $path, null, $updateFreq, '0.5');
+            }
+        }
+        if (!$hasCategoryOverview && count($entries) < self::MAX_URLS - 1 && Router::get('suitecore_categories') !== null) {
+            // Keep the current category capability discoverable if SuiteCore's class is autoloaded late.
+            $entries[] = $this->urlEntry(rtrim((string) $this->options->siteUrl, '/') . '/categories/', null, $updateFreq, '0.5');
         }
 
         $homepage = $this->urlEntry($this->options->siteUrl, $latestModified ?: null, 'daily', '1.0');

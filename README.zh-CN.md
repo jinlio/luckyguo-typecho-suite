@@ -5,7 +5,7 @@
 > **[English](README.md)** · **[简体中文](README.zh-CN.md)**
 
 > [!TIP]
-> 本项目仍在快速迭代中，版本间 API、目录结构与配置可能调整。遇到问题欢迎随时提 [GitHub Issue](https://github.com/jinlio/luckyguo-typecho-suite/issues)；如果喜欢这个主题，想要的功能和点子也尽管提出来，或通过[演示博客关于页](https://blog.luckyguo.dpdns.org/about.html)展示的邮箱直接联系我。
+> 本项目仍在快速迭代中，版本间 API、目录结构与配置可能调整。遇到问题欢迎随时提 [GitHub Issue](https://github.com/jinlio/luckyguo-typecho-suite/issues)；如果喜欢这个主题，想要的功能和点子也尽管提出来。
 
 一组可复用、可配置的 Typecho 主题和插件，适合个人博客、小型内容站点及自托管部署。它包含一套中性响应式主题、可选的后台皮肤、站点地图、Meilisearch 集成、只读监控面板、可选的匿名访问统计、部署脚本与 systemd 单元，以及一份独立的 Typecho 1.3.0 SSRF 加固补丁。
 
@@ -22,6 +22,7 @@
   - [0. 准备环境与备份](#0-准备环境与备份)
   - [1. 复制可复用文件](#1-复制可复用文件)
   - [2. 启用主题](#2-启用主题)
+  - [2.1 启用 SuiteCore](#21-启用-suitecore)
   - [3. 启用 SuiteAdmin（可选）](#3-启用-suiteadmin可选)
   - [4. 启用 Sitemap（可选）](#4-启用-sitemap可选)
   - [5. 启用 SuiteSearch（可选）](#5-启用-suitesearch可选)
@@ -47,6 +48,7 @@
 | 路径 | 作用 | 必需 |
 | --- | --- | --- |
 | `themes/koijournal` | 响应式主题、深色模式、文章目录、代码块和品牌配置 | 无插件依赖 |
+| `plugins/SuiteCore` | 主题能力注册与专属页面路由（当前提供分类总览页） | KoiJournal 分类页 |
 | `plugins/SuiteAdmin` | 可选 Typecho 后台浅色/深色皮肤，共享主题 Cookie | 否 |
 | `plugins/Sitemap` | `/sitemap.xml` 站点地图、内容类型与更新频率 | 否 |
 | `plugins/SuiteSearch` | Meilisearch 搜索、参数化 MySQL `LIKE` 降级和重建队列 | 否 |
@@ -147,6 +149,9 @@ git clone --depth 1 https://github.com/jinlio/luckyguo-typecho-suite.git /tmp/ty
 # 主题始终需要
 rsync -a /tmp/typecho-suite/themes/koijournal/   "$TYPECHO_ROOT/usr/themes/koijournal/"
 
+# SuiteCore 为分类总览页提供 /categories/ 路由
+rsync -a /tmp/typecho-suite/plugins/SuiteCore/     "$TYPECHO_ROOT/usr/plugins/SuiteCore/"
+
 # 下面四个按需复制
 rsync -a /tmp/typecho-suite/plugins/SuiteAdmin/     "$TYPECHO_ROOT/usr/plugins/SuiteAdmin/"
 rsync -a /tmp/typecho-suite/plugins/Sitemap/        "$TYPECHO_ROOT/usr/plugins/Sitemap/"
@@ -173,6 +178,14 @@ ls "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/panel.php"
 4. 保存。首次启用时，主题会从 Typecho 基本设置和首个管理员资料导入站点标题、站点描述、昵称、用户名、个人主页、个人简介和已保存的头像地址；已有设置不会被覆盖。
 
 **验证**：访问首页和任意一篇文章。页头显示你填写的站点名称；切换深浅色后再次刷新页面，偏好应当保持。移动端模拟窗口（Chrome DevTools 即可）打开文章页，确认右侧目录和汉堡菜单正常显示。
+
+### 2.1 启用 SuiteCore
+
+1. 进入 **控制台 → 插件 → SuiteCore → 启用**。
+2. SuiteCore 只负责读取主题能力并注册路由，不负责主题模板渲染。KoiJournal 当前注册分类能力，由主题处理器加载 `categories.php`。
+3. 进入主题设置，导航栏显示项目可勾选：首页、分类、归档、关于。配置只保存稳定的能力 ID，不保存页面标题或 URL。
+
+**验证**：访问 `/categories/`，确认分类总览页返回 200；若 SuiteCore 未安装、未启用或路径冲突，主题会隐藏分类入口并将直接访问统一返回 404。
 
 ### 3. 启用 SuiteAdmin（可选）
 

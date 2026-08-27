@@ -3,6 +3,7 @@
 $isIndex = method_exists($this, 'is') && $this->is('index');
 $isPost = method_exists($this, 'is') && $this->is('post');
 $isPage = method_exists($this, 'is') && $this->is('page');
+$isCategories = method_exists($this, 'is') && $this->is('categories');
 $isSearch = method_exists($this, 'is') && $this->is('search');
 $currentPage = method_exists($this, 'getCurrentPage') ? (int) $this->getCurrentPage() : 1;
 $isFrontPage = $isIndex && $currentPage <= 1;
@@ -18,6 +19,8 @@ $homeDescription = suite_option($this->options, 'seoHomeDescription', $siteDescr
 $archiveDescription = trim((string) ($this->getArchiveDescription() ?? ''));
 if ($isFrontPage) {
     $archiveDescription = $homeDescription;
+} elseif ($isCategories) {
+    $archiveDescription = '按主题分类浏览全部公开文章。';
 } elseif ($isPost || $isPage) {
     $entryDescription = suite_entry_description($this, $this->options);
     if ($entryDescription !== '') {
@@ -31,7 +34,9 @@ if ($archiveDescription === '') {
         : $siteDescription;
     $this->setArchiveDescription($archiveDescription);
 }
-$canonicalUrl = suite_current_canonical($this, $this->options);
+$canonicalUrl = $isCategories
+    ? suite_capability_url('categories', $this->options)
+    : suite_current_canonical($this, $this->options);
 $pageTitle = trim((string) ($this->getArchiveTitle() ?? ''));
 $pageTitle = $pageTitle !== '' ? $pageTitle : $siteName;
 $documentTitle = $isFrontPage
@@ -94,6 +99,16 @@ $modifiedIso = $modifiedAt > 0 ? date(DATE_ATOM, $modifiedAt) : $publishedIso;
     if ($isFrontPage) {
         $schemaGraph[] = ['@type' => 'WebSite', 'name' => $siteName, 'url' => $siteUrl . '/', 'description' => $siteDescription];
         $schemaGraph[] = ['@type' => 'Person', 'name' => $authorName, 'url' => $authorUrl];
+    } elseif ($isCategories) {
+        $schemaGraph[] = [
+            '@type' => 'CollectionPage',
+            '@id' => $canonicalUrl,
+            'url' => $canonicalUrl,
+            'name' => '分类',
+            'description' => $archiveDescription,
+            'inLanguage' => 'zh-CN',
+            'isPartOf' => ['@type' => 'WebSite', 'url' => $siteUrl . '/', 'name' => $siteName],
+        ];
     } elseif ($isPost) {
         $articleSchema = [
             '@type' => 'BlogPosting',
@@ -158,11 +173,9 @@ $modifiedIso = $modifiedAt > 0 ? date(DATE_ATOM, $modifiedAt) : $publishedIso;
             <span><strong><?php echo htmlspecialchars(suite_option($this->options, 'siteName', (string) $this->options->title), ENT_QUOTES, 'UTF-8'); ?></strong><small><?php echo htmlspecialchars(suite_option($this->options, 'authorHandle', 'journal'), ENT_QUOTES, 'UTF-8'); ?></small></span>
         </a>
         <nav id="site-nav" class="site-nav" aria-label="主导航">
-            <a<?php if ($this->is('index')): ?> class="current"<?php endif; ?> href="<?php $this->options->siteUrl(); ?>">首页</a>
-            <?php \Widget\Contents\Page\Rows::alloc()->to($navPages); ?>
-            <?php while ($navPages->next()): ?>
-                <a<?php if ($this->is('page', $navPages->slug)): ?> class="current"<?php endif; ?> href="<?php $navPages->permalink(); ?>"><?php $navPages->title(); ?></a>
-            <?php endwhile; ?>
+            <?php foreach (suite_navigation_items($this->options) as $navItem): ?>
+                <a<?php if (($navItem['id'] === 'home' && $this->is('index')) || ($navItem['id'] === 'categories' && $isCategories) || ($navItem['id'] === 'archives' && $this->is('page', 'archives')) || ($navItem['id'] === 'about' && $this->is('page', 'about'))): ?> class="current"<?php endif; ?> href="<?php echo htmlspecialchars($navItem['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($navItem['label'], ENT_QUOTES, 'UTF-8'); ?></a>
+            <?php endforeach; ?>
         </nav>
         <div class="header-tools">
             <button class="icon-button nav-toggle" type="button" aria-label="打开导航菜单" aria-expanded="false" aria-controls="site-nav">

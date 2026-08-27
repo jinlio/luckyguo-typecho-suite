@@ -49,6 +49,19 @@ function themeConfig($form)
     $form->addInput($text('postListLabel', '文章列表英文标签', 'RECENT WRITING'));
     $form->addInput($text('articleAuthorLabel', '文章作者标签', 'WRITTEN BY'));
     $form->addInput($text('articleTocLabel', '文章目录标签', 'ON THIS PAGE'));
+    $navigationInput = (new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'navigationItems', [
+            'home' => _t('首页'),
+            'categories' => _t('分类'),
+            'archives' => _t('归档'),
+            'about' => _t('关于'),
+        ],
+        ['home', 'categories', 'archives', 'about'],
+        _t('导航栏显示项目')
+    ))->multiMode();
+    $navigationStatus = suite_capability_status('categories');
+    $navigationInput->description(_t('仅显示主题预设页面；分类路由状态：' . $navigationStatus['status'] . '。'));
+    $form->addInput($navigationInput);
 
     $bio = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'bio',
@@ -376,6 +389,7 @@ function suite_persist_theme_settings(array $settings): bool
 
 function themeConfigHandle(array &$settings, bool $isInit): bool
 {
+    suite_normalize_navigation_settings($settings, $isInit);
     if ($isInit) {
         // Keep a previously saved theme configuration intact on reactivation.
         if (!suite_import_default_profile($settings, true)) {
@@ -383,6 +397,143 @@ function themeConfigHandle(array &$settings, bool $isInit): bool
         }
     }
     return suite_persist_theme_settings($settings);
+}
+
+/** Stable theme capabilities. IDs are persisted; labels and paths may change. */
+function suite_capabilities($options = null): array
+{
+    return [
+        ['id' => 'home', 'path' => '/', 'label' => '首页', 'handler' => '', 'enabled' => true, 'nav_default' => true, 'sitemap' => false],
+        ['id' => 'categories', 'path' => '/categories/', 'label' => '分类', 'handler' => 'suite_core_handle_capability', 'template' => 'categories.php', 'enabled' => true, 'nav_default' => true, 'sitemap' => true],
+        ['id' => 'archives', 'path' => '/archives.html', 'label' => '归档', 'handler' => '', 'enabled' => true, 'nav_default' => true, 'sitemap' => false],
+        ['id' => 'about', 'path' => '/about.html', 'label' => '关于', 'handler' => '', 'enabled' => true, 'nav_default' => true, 'sitemap' => false],
+    ];
+}
+
+function suite_normalize_navigation_settings(array &$settings, bool $isInit): void
+{
+    if ($isInit && !array_key_exists('navigationItems', $settings)) {
+        $settings['navigationItems'] = ['home', 'categories', 'archives', 'about'];
+    }
+    if (!array_key_exists('navigationItems', $settings)) {
+        return;
+    }
+    $allowed = ['home', 'categories', 'archives', 'about'];
+    $value = $settings['navigationItems'];
+    if (is_string($value)) {
+        $decoded = json_decode($value, true);
+        $value = is_array($decoded) ? $decoded : preg_split('/[,\s]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+    }
+    $settings['navigationItems'] = array_values(array_unique(array_intersect($allowed, array_map('strval', (array) $value))));
+    $settings['navigation_config_version'] = 2;
+}
+
+function suite_navigation_ids($options): array
+{
+    $value = $options->navigationItems ?? null;
+    if ($value === null || $value === '') {
+        return ['home', 'categories', 'archives', 'about'];
+    }
+    if (is_string($value)) {
+        $decoded = json_decode($value, true);
+        $value = is_array($decoded) ? $decoded : preg_split('/[,\s]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+    }
+    $allowed = ['home', 'categories', 'archives', 'about'];
+    return array_values(array_unique(array_intersect($allowed, array_map('strval', (array) $value))));
+}
+
+function suite_capability_url(string $id, $options): string
+{
+    $base = rtrim(suite_site_url($options), '/') . '/';
+    $paths = ['home' => '', 'categories' => 'categories/', 'archives' => 'archives.html', 'about' => 'about.html'];
+    return $base . ($paths[$id] ?? '');
+}
+
+function suite_capability_route_available(string $id): bool
+{
+    return suite_capability_status($id)['route_available'];
+}
+
+function suite_capability_status(string $id): array
+{
+    $fallback = ['registered' => false, 'enabled' => false, 'route_available' => false, 'status' => 'missing'];
+    if (!class_exists('TypechoPlugin\\SuiteCore\\Plugin')) {
+        try {
+            $options = \Widget\Options::alloc();
+            $file = rtrim((string) $options->pluginDir, '/') . '/SuiteCore/Plugin.php';
+            if (is_file($file)) {
+                require_once $file;
+            }
+        } catch (\Throwable $e) {
+            return $fallback;
+        }
+    }
+    if (!class_exists('TypechoPlugin\\SuiteCore\\Plugin')) {
+        return $fallback;
+    }
+    return \TypechoPlugin\SuiteCore\Plugin::capabilityStatus($id);
+}
+
+function suite_navigation_items($options): array
+{
+    $capabilities = suite_capabilities($options);
+    $byId = [];
+    foreach ($capabilities as $capability) {
+        $byId[(string) ($capability['id'] ?? '')] = $capability;
+    }
+    $items = [];
+    foreach (suite_navigation_ids($options) as $id) {
+        if (!isset($byId[$id]) || empty($byId[$id]['enabled'])) {
+            continue;
+        }
+        if ($id === 'categories' && !suite_capability_route_available($id)) {
+            continue;
+        }
+        $items[] = [
+            'id' => $id,
+            'label' => (string) $byId[$id]['label'],
+            'url' => suite_capability_url($id, $options),
+        ];
+    }
+    return $items;
+}
+
+/** Called by SuiteCore after a capability route matches. */
+function suite_core_handle_capability(string $id, $archive, $select): bool
+{
+    if ($id !== 'categories') {
+        return false;
+    }
+    $options = \Widget\Options::alloc();
+    $archive->setArchiveType('categories');
+    $archive->setArchiveTitle('分类');
+    $archive->setArchiveDescription('按主题分类浏览全部公开文章。');
+    $archive->setArchiveUrl(suite_capability_url('categories', $options));
+    $archive->setThemeFile('categories.php');
+    return true;
+}
+
+function suite_visible_category_counts($options): array
+{
+    $counts = [];
+    try {
+        $db = suite_db();
+        $rows = $db->fetchAll($db->select(
+            'table.relationships.mid',
+            'COUNT(DISTINCT table.relationships.cid) AS n'
+        )->from('table.relationships')
+            ->join('table.contents', 'table.relationships.cid = table.contents.cid')
+            ->where('table.contents.type = ?', 'post')
+            ->where('table.contents.status = ?', 'publish')
+            ->where('table.contents.created < ?', (int) $options->time)
+            ->group('table.relationships.mid'));
+        foreach ($rows as $row) {
+            $counts[(int) $row['mid']] = (int) $row['n'];
+        }
+    } catch (\Throwable $e) {
+        // The category page remains available with an empty result on DB errors.
+    }
+    return $counts;
 }
 
 function suite_flag($options, string $name, bool $fallback = false): bool
