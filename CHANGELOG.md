@@ -2,6 +2,8 @@
 
 ## 2026-08-27
 
+- Optimized the Typecho post-editor category selector: selecting a child category now selects its parent chain, while clearing a parent category clears every descendant selection.
+
 - Fixed theme asset handling when site-specific avatar, banner, or cover URLs point to files that are no longer present on the current deployment. Same-origin missing files now fall back to the theme default instead of rendering broken images; external user-provided URLs remain untouched.
 - Restored and verified the site's configured avatar, homepage banner, and article cover on production. Home, article, About, archives, categories, category, search, 404, RSS, and Sitemap smoke checks completed without new PHP/Nginx errors; 375px light/dark checks show no horizontal overflow and all same-origin images decode successfully.
 

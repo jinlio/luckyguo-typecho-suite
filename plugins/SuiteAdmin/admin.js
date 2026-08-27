@@ -53,6 +53,14 @@
             byValue[String(input.value)] = input;
         });
 
+        var childrenByParent = {};
+        Object.keys(parents).forEach(function (child) {
+            var parent = String(parents[child] || '');
+            if (!parent) { return; }
+            if (!childrenByParent[parent]) { childrenByParent[parent] = []; }
+            childrenByParent[parent].push(child);
+        });
+
         function ensureParents() {
             Array.prototype.forEach.call(inputs, function (input) {
                 if (!input.checked) { return; }
@@ -67,8 +75,31 @@
             });
         }
 
+        function clearDescendants(input) {
+            var queue = [String(input.value)];
+            var visited = {};
+            var guard = 0;
+            while (queue.length && guard++ < 256) {
+                var parent = queue.shift();
+                if (visited[parent]) { continue; }
+                visited[parent] = true;
+                var children = childrenByParent[parent] || [];
+                children.forEach(function (child) {
+                    var childInput = byValue[String(child)];
+                    if (childInput) { childInput.checked = false; }
+                    queue.push(String(child));
+                });
+            }
+        }
+
         Array.prototype.forEach.call(inputs, function (input) {
-            input.addEventListener('change', ensureParents);
+            input.addEventListener('change', function () {
+                if (input.checked) {
+                    ensureParents();
+                } else {
+                    clearDescendants(input);
+                }
+            });
         });
         if (inputs[0].form) {
             inputs[0].form.addEventListener('submit', ensureParents);
