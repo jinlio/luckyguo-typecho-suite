@@ -334,8 +334,9 @@ $bucket = ['24h' => 300, '7d' => 3600, '30d' => 86400, '1y' => 86400][$range];
 $interval = ['24h' => '1 DAY', '7d' => '7 DAY', '30d' => '30 DAY', '1y' => '370 DAY'][$range];
 $labelFmt = ['24h' => 'H:i', '7d' => 'm-d H:i', '30d' => 'm-d', '1y' => 'm-d'][$range];
 
-$metrics = $traffic = $sites24h = $uptime30 = $codes = $topIps = [];
+$metrics = $traffic = $sites24h = $uptime30 = $codes = [];
 $uvDaily = $topPosts = [];
+$incidents = [];
 $todayUv = $todayPv = $totalUv = $totalPv = 0;
 
 $rollup = ['24h' => null, '7d' => 'hourly', '30d' => 'daily', '1y' => 'daily'][$range];
@@ -370,11 +371,12 @@ $uptime30 = mon_db_all($pdo, 'uptime summary',
 $codes = mon_db_row($pdo, 'traffic totals',
     "SELECT SUM(s2xx) s2, SUM(s3xx) s3, SUM(s4xx) s4, SUM(s5xx) s5, SUM(requests) req, SUM(bytes_kb) kb
      FROM traffic_min WHERE ts >= NOW() - INTERVAL 1 DAY");
-$topIps = mon_db_all($pdo, 'top IPs',
-    "SELECT jt.ip, SUM(jt.c) n FROM traffic_min,
-            JSON_TABLE(CASE WHEN JSON_VALID(top_ips) THEN top_ips ELSE JSON_ARRAY() END,
-                       '$[*]' COLUMNS (ip VARCHAR(45) PATH '$[0]', c INT PATH '$[1]')) jt
-     WHERE ts >= NOW() - INTERVAL 1 DAY GROUP BY jt.ip ORDER BY n DESC LIMIT 8");
+$incidentTable = mon_db_all($pdo, 'incident table', "SHOW TABLES LIKE 'monitor_incidents'");
+if ($incidentTable) {
+    $incidents = mon_db_all($pdo, 'open incidents',
+        "SELECT target, provider, failure_streak, last_code, last_ttfb_ms, opened_at
+         FROM monitor_incidents WHERE status = 'open' ORDER BY opened_at DESC LIMIT 20");
+}
 $typechoDb = '`' . MON_TYPECHO_DB . '`';
 $typechoTable = static function (string $name) use ($typechoDb): string {
     return $typechoDb . '.`' . MON_TYPECHO_PREFIX . $name . '`';
@@ -675,6 +677,17 @@ $monitorChecks = [
     </section>
 
     <!-- 站点可用性 -->
+    <?php if ($incidents): ?>
+    <section>
+        <header><div><p class="eyebrow">INCIDENTS</p><h2>进行中的站点事件</h2></div><span class="hint status-warning">连续失败达到阈值</span></header>
+        <div class="panel incident-list">
+            <?php foreach ($incidents as $incident): ?>
+            <div class="incident-row"><strong><?= mon_e($incident['target']) ?></strong><span><?= mon_e($incident['provider']) ?></span><span>失败 <?= (int) $incident['failure_streak'] ?> 次</span><span>HTTP <?= (int) $incident['last_code'] ?> · TTFB <?= (int) $incident['last_ttfb_ms'] ?> ms</span><time><?= mon_e((string) $incident['opened_at']) ?></time></div>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php endif; ?>
+
     <section>
         <header><div><p class="eyebrow">UPTIME</p><h2>站点可用性</h2></div><span class="hint">24h 每格 15 分钟 · 本机链路探测</span></header>
         <div class="panel">
@@ -774,11 +787,7 @@ $monitorChecks = [
                     <span><i style="background:var(--accent)"></i>4xx <?= mon_fnum((float)($codes['s4'] ?? 0)) ?></span>
                     <span><i style="background:var(--accent-strong)"></i>5xx <?= mon_fnum((float)($codes['s5'] ?? 0)) ?></span>
                 </div>
-                <div class="toplist">
-                    <?php $maxN = max(1, (int)($topIps[0]['n'] ?? 1)); foreach ($topIps as $ip): ?>
-                    <div class="row"><span class="ip"><?= mon_e($ip['ip']) ?></span><span class="bar" style="width:<?= (int)round($ip['n'] * 100 / $maxN) ?>%"></span><span class="n"><?= (int)$ip['n'] ?></span></div>
-                    <?php endforeach; if (!$topIps): ?><span class="hint">暂无 IP 数据</span><?php endif; ?>
-                </div>
+                <p class="hint">为保护隐私，面板不展示原始 IP；仅保留聚合请求量。</p>
             </div>
         </div>
     </section>

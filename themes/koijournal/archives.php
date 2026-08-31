@@ -14,7 +14,7 @@ while ($archives->next()) {
     $year = date('Y', $created);
     $month = date('m', $created);
     $archiveGroups[$year][$month][] = [
-        'title' => (string) $archives->title,
+        'title' => suite_title_text($archives->title),
         'permalink' => (string) $archives->permalink,
         'date' => date('Y-m-d', $created),
         'displayDate' => date('m.d', $created),
@@ -22,7 +22,7 @@ while ($archives->next()) {
 }
 ?>
 <main id="main-content" class="page-shell archives-page">
-    <header class="archive-heading"><p class="eyebrow">EVERYTHING, IN ORDER</p><h1><?php $this->title(); ?></h1></header>
+    <header class="archive-heading"><p class="eyebrow">EVERYTHING, IN ORDER</p><h1><?php echo suite_stored_html($this->title); ?></h1></header>
     <?php if ($archiveGroups): ?>
     <div class="archive-timeline">
         <?php $archiveIndex = 0; ?>
@@ -38,7 +38,7 @@ while ($archives->next()) {
                         <?php foreach ($posts as $post): ?>
                         <a class="archive-row" href="<?php echo htmlspecialchars($post['permalink'], ENT_QUOTES, 'UTF-8'); ?>" style="--archive-delay: <?php echo min($archiveIndex++, 12) * 50; ?>ms">
                             <time datetime="<?php echo htmlspecialchars($post['date'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($post['displayDate'], ENT_QUOTES, 'UTF-8'); ?></time>
-                            <strong><?php echo htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                            <strong><?php echo suite_html($post['title']); ?></strong>
                         </a>
                         <?php endforeach; ?>
                     </div>

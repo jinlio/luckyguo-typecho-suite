@@ -1,8 +1,8 @@
 <?php if (!defined('__TYPECHO_ROOT_DIR__')) exit; ?>
-<section id="comments" class="comments" aria-label="评论">
+<section id="comments" class="comments" aria-labelledby="comments-title">
     <?php $this->comments()->to($comments); ?>
     <div class="comments-heading">
-        <h2><?php $this->commentsNum(_t('评论'), _t('1 条评论'), _t('%d 条评论')); ?></h2>
+        <h2 id="comments-title"><?php $this->commentsNum(_t('评论'), _t('1 条评论'), _t('%d 条评论')); ?></h2>
         <?php if (suite_flag($this->options, 'showCommentsFeed', true)): ?><a href="<?php $this->options->commentsFeedUrl(); ?>">订阅评论 RSS</a><?php endif; ?>
     </div>
 

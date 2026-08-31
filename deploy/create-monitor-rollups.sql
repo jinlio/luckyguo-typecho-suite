@@ -1,7 +1,40 @@
 -- Migration for monitor installations created before swap_total was collected.
 -- New installations only need create-suite-monitor.sql. Run this once before
 -- deploying the current collector, then rerun it to rebuild existing rollups.
-ALTER TABLE metrics ADD COLUMN IF NOT EXISTS swap_total INT UNSIGNED NOT NULL DEFAULT 0 AFTER mem_used;
+SET @metrics_swap_total_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'metrics'
+      AND column_name = 'swap_total'
+);
+SET @metrics_swap_total_sql := IF(
+    @metrics_swap_total_exists = 0,
+    'ALTER TABLE metrics ADD COLUMN swap_total INT UNSIGNED NOT NULL DEFAULT 0 AFTER mem_used',
+    'SELECT 1'
+);
+PREPARE metrics_swap_total_stmt FROM @metrics_swap_total_sql;
+EXECUTE metrics_swap_total_stmt;
+DEALLOCATE PREPARE metrics_swap_total_stmt;
+
+-- The incident collector reads the latest sample per target. Older monitor
+-- databases may lack this index, making the legacy correlated query scan the
+-- full site_checks table for every row.
+SET @site_checks_index_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'site_checks'
+      AND index_name = 'idx_site_checks_target_ts'
+);
+SET @site_checks_index_sql := IF(
+    @site_checks_index_exists = 0,
+    'ALTER TABLE site_checks ADD KEY idx_site_checks_target_ts (target, ts)',
+    'SELECT 1'
+);
+PREPARE site_checks_index_stmt FROM @site_checks_index_sql;
+EXECUTE site_checks_index_stmt;
+DEALLOCATE PREPARE site_checks_index_stmt;
 
 -- The collector refreshes rollups with INSERT ... SELECT from the raw tables.
 -- Grant only the required tables in your own database and account. The exact

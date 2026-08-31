@@ -144,7 +144,6 @@ if (( CURSIZE > PREV )) && [[ -r "$LOG" ]]; then
     {
       if ($1 == "-") next
       req++
-      ip=$1; if (ip=="-") ip="127.0.0.1"
       s=0
       if (match($0, /" [0-9][0-9][0-9] /)) {
         s=substr($0, RSTART+2, 3)+0
@@ -156,14 +155,11 @@ if (( CURSIZE > PREV )) && [[ -r "$LOG" ]]; then
       else if (s>=300 && s<400) s3++
       else if (s>=400 && s<500) s4++
       else if (s>=500) s5++
-      ips[ip]++
     }
     END {
       printf "TOTALS %d %d %d %d %d %d\n", req+0, bytes+0, s2+0, s3+0, s4+0, s5+0
-      for (i in ips) printf "IP %s %d\n", i, ips[i]
     }')
   read -r _ REQ BYTES S2 S3 S4 S5 <<< "$(echo "$AGG" | grep '^TOTALS ')"
-  TOPJSON=$(echo "$AGG" | grep '^IP ' | grep -E '^IP [0-9a-fA-F.:]+ [0-9]+$' | sort -k3 -nr | head -5 | awk 'BEGIN{printf "["}{printf "%s[\"%s\",%d]", (NR>1?",":""), $2, $3}END{print "]"}') || TOPJSON="[]"
 fi
 echo "$CURSIZE" > "$STATE_DIR/.logpos"
 BYTES_KB=$((BYTES/1024))

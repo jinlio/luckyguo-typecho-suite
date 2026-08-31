@@ -7,6 +7,10 @@ config.inc.php
 usr/uploads/
 usr/backups/
 */cache/
+.phpunit.cache/
+vendor/
+dist/
+*.sha256
 *.bak*
 ._*
 .DS_Store

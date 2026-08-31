@@ -23,9 +23,15 @@ class Plugin implements PluginInterface
     public static function activate()
     {
         \Typecho\Plugin::factory('admin/header.php')->header = __CLASS__ . '::header';
-        \Typecho\Plugin::factory('admin/write-post.php')->option = __CLASS__ . '::postOption';
-        \Typecho\Plugin::factory('Widget\Contents\Post\Edit')->write = __CLASS__ . '::postWrite';
-        \Typecho\Plugin::factory('Widget\Archive')->handleInit = __CLASS__ . '::archiveInit';
+        // Content hooks moved to SuiteContent. Keep the legacy callbacks for
+        // one compatibility cycle, but do not register them when the
+        // dedicated content plugin is active (which would duplicate writes
+        // and ORDER BY clauses).
+        if (!self::suiteContentActive()) {
+            \Typecho\Plugin::factory('admin/write-post.php')->option = __CLASS__ . '::postOption';
+            \Typecho\Plugin::factory('Widget\Contents\Post\Edit')->write = __CLASS__ . '::postWrite';
+            \Typecho\Plugin::factory('Widget\Archive')->handleInit = __CLASS__ . '::archiveInit';
+        }
         return _t('后台换肤已启用');
     }
 
@@ -78,9 +84,11 @@ class Plugin implements PluginInterface
         $form->addInput((new Form\Element\Text(
             'cookieName', null, 'suite-theme', _t('主题偏好 Cookie 名称')
         ))->addRule('required', _t('请填写 Cookie 名称')));
-        $form->addInput(new Form\Element\Text(
-            'cookieDomain', null, '留空表示仅当前主机', _t('主题偏好 Cookie 域名')
-        ));
+        $cookieDomain = new Form\Element\Text(
+            'cookieDomain', null, '', _t('主题偏好 Cookie 域名')
+        );
+        $cookieDomain->input->setAttribute('placeholder', '留空表示仅当前主机');
+        $form->addInput($cookieDomain);
         $form->addInput(new Form\Element\Select(
             'defaultTheme',
             ['system' => _t('跟随系统'), 'light' => _t('默认浅色'), 'dark' => _t('默认深色')],
@@ -92,6 +100,9 @@ class Plugin implements PluginInterface
     /** Add the post-level sticky switch to Typecho's native editor. */
     public static function postOption($post): void
     {
+        if (self::suiteContentActive()) {
+            return;
+        }
         $sticky = '0';
         try {
             $sticky = (string) ($post->fields->sticky ?? '0');
@@ -109,6 +120,9 @@ class Plugin implements PluginInterface
     /** Persist the checkbox as Typecho's native numeric ordering value. */
     public static function postWrite(array $contents, \Widget\Contents\Post\Edit $widget): array
     {
+        if (self::suiteContentActive()) {
+            return $contents;
+        }
         $fields = $widget->request->getArray('fields');
         $contents['order'] = (string) ($fields['sticky'] ?? '') === '1' ? 1 : 0;
         return $contents;
@@ -117,7 +131,21 @@ class Plugin implements PluginInterface
     /** Put sticky posts before regular posts while retaining date ordering within each group. */
     public static function archiveInit(\Widget\Archive $archive, \Typecho\Db\Query $select): void
     {
+        if (self::suiteContentActive()) {
+            return;
+        }
         $select->order('table.contents.order', \Typecho\Db::SORT_DESC);
+    }
+
+    /** Return true when the dedicated content owner is enabled. */
+    private static function suiteContentActive(): bool
+    {
+        try {
+            $active = \Typecho\Plugin::export()['activated'] ?? [];
+            return isset($active['SuiteContent']);
+        } catch (\Throwable $e) {
+            return class_exists('TypechoPlugin\\SuiteContent\\Plugin');
+        }
     }
 
     public static function personalConfig(Form $form)

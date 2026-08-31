@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS typecho_suite_views (
 
 CREATE TABLE IF NOT EXISTS typecho_suite_visitors (
   vday DATE NOT NULL,
-  vip VARCHAR(64) NOT NULL,
-  ua VARCHAR(250) NOT NULL,
+  vip VARCHAR(64) NOT NULL COMMENT 'HMAC-SHA256 visitor identifier; never store a raw IP',
+  ua VARCHAR(250) NOT NULL DEFAULT '' COMMENT 'Deprecated compatibility column; keep empty',
   first_seen DATETIME NOT NULL,
   last_seen DATETIME NOT NULL,
   PRIMARY KEY (vday, vip)

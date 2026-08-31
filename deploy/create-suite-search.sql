@@ -9,6 +9,21 @@ CREATE TABLE IF NOT EXISTS typecho_suite_changequeue (
   PRIMARY KEY (id), KEY idx_cid (cid), KEY idx_processed (processed_at), KEY idx_batch (rebuild_batch_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Materialized MySQL fallback documents.  The table is optional: when it is
+-- absent, SuiteSearch falls back to the native contents/relationships tables.
+CREATE TABLE IF NOT EXISTS typecho_suite_search_docs (
+  cid INT UNSIGNED NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'publish',
+  title TEXT NOT NULL,
+  body MEDIUMTEXT NOT NULL,
+  tags TEXT NOT NULL,
+  categories TEXT NOT NULL,
+  modified INT UNSIGNED NOT NULL,
+  updated_at DATETIME(6) NOT NULL,
+  PRIMARY KEY (cid),
+  KEY idx_search_docs_status_modified (status, modified)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS typecho_suite_searchmeta (
   id INT UNSIGNED NOT NULL,
   search_index_version VARCHAR(32) NOT NULL,

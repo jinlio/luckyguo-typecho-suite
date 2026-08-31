@@ -24,6 +24,7 @@ final class Plugin implements PluginInterface
             'RuntimeConfig',
             'MeiliClient',
             'Indexer',
+            'CircuitBreaker',
             'SearchService',
         ] as $file) {
             require_once __DIR__ . '/' . $file . '.php';
@@ -45,9 +46,11 @@ final class Plugin implements PluginInterface
         $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
             'enabled', ['1' => _t('启用 Meilisearch 搜索')], ['1'], _t('搜索引擎')
         ))->multiMode());
-        $form->addInput((new \Typecho\Widget\Helper\Form\Element\Text(
-            'meiliUrl', null, 'http://127.0.0.1:7700', _t('Meilisearch 地址（留空则使用 MySQL 搜索）')
-        ))->addRule('url', _t('请输入有效的 HTTP(S) 地址')));
+        $meiliUrl = (new \Typecho\Widget\Helper\Form\Element\Text(
+            'meiliUrl', null, '', _t('Meilisearch 地址（留空则使用 MySQL 搜索）')
+        ));
+        $meiliUrl->input->setAttribute('placeholder', 'http://127.0.0.1:7700');
+        $form->addInput($meiliUrl->addRule('url', _t('请输入有效的 HTTP(S) 地址')));
         $form->addInput(new \Typecho\Widget\Helper\Form\Element\Password(
             'searchKey', null, '', _t('搜索 API Key（只读）')
         ));
@@ -78,6 +81,12 @@ final class Plugin implements PluginInterface
         $form->addInput((new \Typecho\Widget\Helper\Form\Element\Checkbox(
             'mysqlFallback', ['1' => _t('Meilisearch 不可用时使用 MySQL LIKE 搜索')], ['1'], _t('降级策略')
         ))->multiMode());
+        $status = new \Typecho\Widget\Helper\Form\Element\Text(
+            'statusSummary', null, self::statusSummary(), _t('运行状态（只读）')
+        );
+        $status->input->setAttribute('readonly', 'readonly');
+        $status->input->setAttribute('aria-readonly', 'true');
+        $form->addInput($status);
     }
 
     public static function personalConfig(\Typecho\Widget\Helper\Form $form): void
@@ -96,6 +105,7 @@ final class Plugin implements PluginInterface
             ? in_array('1', array_map('strval', $settings['clearKeys']), true)
             : (string) ($settings['clearKeys'] ?? '') === '1';
         unset($settings['clearKeys']);
+        unset($settings['statusSummary']);
         foreach ($secretFields as $field) {
             if ($clear) {
                 $settings[$field] = '';
@@ -141,6 +151,26 @@ final class Plugin implements PluginInterface
             SearchService::instance()->sync($cid, $operation);
         } catch (\Throwable $error) {
             error_log('[SuiteSearch] queue write failed: ' . $error->getMessage());
+        }
+    }
+
+    private static function statusSummary(): string
+    {
+        try {
+            $diagnostics = SearchService::instance()->diagnostics();
+            $parts = [
+                '后端: ' . $diagnostics['backend'],
+                '已发布: ' . ($diagnostics['published'] === null ? '未知' : (string) $diagnostics['published']),
+                '待处理队列: ' . ($diagnostics['pending'] === null ? '未安装' : (string) $diagnostics['pending']),
+                '重建: ' . $diagnostics['rebuild'],
+                '物化降级文档: ' . ($diagnostics['docs'] ? '已启用' : '未安装'),
+            ];
+            if ($diagnostics['circuit']) {
+                $parts[] = '远程熔断中';
+            }
+            return implode(' · ', $parts);
+        } catch (\Throwable $error) {
+            return '状态暂不可用';
         }
     }
 }

@@ -18,23 +18,20 @@ $this->need('header.php');
             <?php echo suite_avatar_markup($this->options); ?>
             <div>
                 <p class="eyebrow"><?php echo htmlspecialchars(suite_option($this->options, 'homeEyebrow', 'JOURNAL / PERSONAL SPACE'), ENT_QUOTES, 'UTF-8'); ?></p>
-                <h1><?php echo htmlspecialchars(suite_option($this->options, 'siteName', (string) $this->options->title), ENT_QUOTES, 'UTF-8'); ?></h1>
-                <p class="intro-note"><?php echo nl2br(htmlspecialchars(suite_option($this->options, 'bio', '记录学习、折腾和那些值得留住的细节。'))); ?></p>
+                <h1><?php echo suite_html(suite_option($this->options, 'siteName', (string) $this->options->title)); ?></h1>
+                <p class="intro-note"><?php echo nl2br(suite_html(suite_option($this->options, 'bio', '记录学习、折腾和那些值得留住的细节。'))); ?></p>
             </div>
         </div>
         <p class="intro-signature"><?php echo htmlspecialchars(suite_option($this->options, 'homeSignature', 'LEARN · BUILD · LIVE'), ENT_QUOTES, 'UTF-8'); ?><span><?php echo htmlspecialchars(suite_option($this->options, 'homeSignatureNote', '慢慢写，也认真生活。'), ENT_QUOTES, 'UTF-8'); ?></span></p>
     </section>
-    <?php $bannerUrl = suite_asset($this->options, 'bannerUrl'); ?>
-    <?php if ($bannerUrl !== ''): ?><figure class="journal-banner"><img src="<?php echo htmlspecialchars($bannerUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars(suite_option($this->options, 'bannerAlt', '站点首页横幅'), ENT_QUOTES, 'UTF-8'); ?>" fetchpriority="high"></figure><?php endif; ?>
+    <?php $bannerUrl = suite_asset($this->options, 'bannerUrl'); $bannerMobileUrl = suite_asset($this->options, 'bannerMobileUrl'); ?>
+    <?php if ($bannerUrl !== ''): ?><figure class="journal-banner"><picture><?php if ($bannerMobileUrl !== ''): ?><source media="(max-width: 560px)" srcset="<?php echo suite_html_attr($bannerMobileUrl); ?>" sizes="100vw"><?php endif; ?><img src="<?php echo suite_html_attr($bannerUrl); ?>" alt="<?php echo suite_html(suite_option($this->options, 'bannerAlt', '站点首页横幅')); ?>" width="1040" height="347" sizes="(max-width: 1120px) calc(100vw - 48px), 1040px" fetchpriority="high" decoding="async"></picture></figure><?php endif; ?>
     <?php else: ?>
     <header class="archive-heading">
         <p class="eyebrow">BROWSE THE JOURNAL</p>
-        <h1><?php $this->archiveTitle([
-            'category' => _t('%s'),
-            'search' => _t('搜索：%s'),
-            'tag' => _t('#%s'),
-            'author' => _t('%s 的文章')
-        ], '', ''); ?></h1>
+        <h1><?php echo suite_html(
+            $this->is('search') ? '搜索：' . suite_archive_title_text($this) : suite_archive_title_text($this)
+        ); ?></h1>
     </header>
     <?php endif; ?>
 
@@ -51,11 +48,11 @@ $this->need('header.php');
                 <div class="post-date"><span class="post-sequence"><?php printf('%02d', $postIndex++); ?></span><time datetime="<?php $this->date('c'); ?>"><?php $this->date('Y.m.d'); ?></time></div>
                 <div class="post-main">
                     <div class="post-kicker"><?php if ($postMeta['categories']): ?><?php foreach ($postMeta['categories'] as $categoryIndex => $category): ?><?php echo $categoryIndex ? ' / ' : ''; ?><a href="<?php echo htmlspecialchars($category['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8'); ?></a><?php endforeach; ?><?php else: ?>未分类<?php endif; ?></div>
-                    <h2><?php if ((int) $this->order > 0): ?><span class="post-sticky">置顶</span> <?php endif; ?><a href="<?php $this->permalink(); ?>"><?php $this->title(); ?></a></h2>
+                    <h2><?php if ((int) $this->order > 0): ?><span class="post-sticky">置顶</span> <?php endif; ?><a href="<?php $this->permalink(); ?>"><?php echo suite_stored_html($this->title); ?></a></h2>
                     <div class="post-summary"><?php echo htmlspecialchars(suite_list_excerpt((string) $this->text, suite_int_option($this->options, 'homeExcerptLength', 150, 40, 400)), ENT_QUOTES, 'UTF-8'); ?></div>
                     <div class="post-meta">
                         <span><?php $this->commentsNum('暂无评论', '1 条评论', '%d 条评论'); ?></span>
-                        <span>阅读 <?php echo $postViews[(int) $this->cid] ?? 0; ?></span>
+                        <?php if (suite_statistics_enabled($this->options)): ?><span>阅读 <?php echo $postViews[(int) $this->cid] ?? 0; ?></span><?php endif; ?>
                         <span><?php foreach ($postMeta['tags'] as $tagIndex => $tag): ?><?php echo $tagIndex ? ' #' : ''; ?><a href="<?php echo htmlspecialchars($tag['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($tag['name'], ENT_QUOTES, 'UTF-8'); ?></a><?php endforeach; ?></span>
                     </div>
                 </div>
@@ -65,17 +62,22 @@ $this->need('header.php');
             <div class="empty-state">
                 <?php if ($this->is('search')): ?>
                     <span class="empty-index">00 / SEARCH</span>
-                    <div><strong>没有找到相关文章</strong><span>换个关键词再试试，或返回首页继续浏览。</span></div>
+                    <div class="empty-copy"><strong>没有找到相关文章</strong><span>换个关键词再试试，或返回首页继续浏览。</span><form class="empty-search" method="get" action="<?php echo suite_html_attr(suite_site_url($this->options)); ?>" role="search">
+                        <label for="empty-search-input">重新搜索</label>
+                        <input id="empty-search-input" name="s" type="search" value="<?php echo suite_html_attr(suite_archive_title_text($this)); ?>" placeholder="输入关键词">
+                        <button type="submit">搜索</button>
+                    </form></div>
                     <a href="<?php $this->options->siteUrl(); ?>">返回首页 <span aria-hidden="true">→</span></a>
                 <?php else: ?>
                     <span class="empty-index">00 / START</span>
                     <div><strong>第一篇记录还在路上</strong><span>慢慢写，慢慢积累。</span></div>
-                    <a href="<?php $this->options->siteUrl('about.html'); ?>">先认识一下我 <span aria-hidden="true">→</span></a>
+                    <?php $aboutUrl = suite_about_url($this->options); ?>
+                    <?php if ($aboutUrl !== ''): ?><a href="<?php echo suite_html_attr($aboutUrl); ?>">先认识一下我 <span aria-hidden="true">→</span></a><?php endif; ?>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
     </section>
-    <nav class="pagination" aria-label="文章翻页"><?php $this->pageNav('上一页', '下一页', 2, '…'); ?></nav>
+    <?php if (method_exists($this, 'getTotalPage') && (int) $this->getTotalPage() > 1): ?><nav class="pagination" aria-label="文章翻页"><?php $this->pageNav('上一页', '下一页', 2, '…'); ?></nav><?php endif; ?>
 
     <?php if ($this->is('index')): ?>
         <?php \Widget\Metas\Category\Rows::alloc()->to($categories); ?>

@@ -30,6 +30,42 @@ CREATE TABLE IF NOT EXISTS site_checks (
     KEY idx_site_checks_target_ts (target, ts)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Existing installations may have created site_checks before the covering
+-- index was added. Keep the schema file safe to rerun during upgrades.
+SET @site_checks_index_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'site_checks'
+      AND index_name = 'idx_site_checks_target_ts'
+);
+SET @site_checks_index_sql := IF(
+    @site_checks_index_exists = 0,
+    'ALTER TABLE site_checks ADD KEY idx_site_checks_target_ts (target, ts)',
+    'SELECT 1'
+);
+PREPARE site_checks_index_stmt FROM @site_checks_index_sql;
+EXECUTE site_checks_index_stmt;
+DEALLOCATE PREPARE site_checks_index_stmt;
+
+-- Durable incident state. The collector opens after three consecutive failed
+-- samples and closes after two consecutive successful samples.
+CREATE TABLE IF NOT EXISTS monitor_incidents (
+    target VARCHAR(32) NOT NULL,
+    provider VARCHAR(32) NOT NULL DEFAULT 'local',
+    status ENUM('open', 'closed') NOT NULL DEFAULT 'closed',
+    failure_streak TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    success_streak TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    opened_at DATETIME NULL,
+    closed_at DATETIME NULL,
+    last_seen DATETIME NOT NULL,
+    last_code SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    last_ttfb_ms INT UNSIGNED NOT NULL DEFAULT 0,
+    last_fingerprint CHAR(64) NOT NULL,
+    PRIMARY KEY (target, provider),
+    KEY idx_monitor_incidents_status (status, last_seen)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS traffic_min (
     ts DATETIME NOT NULL,
     requests BIGINT UNSIGNED NOT NULL,

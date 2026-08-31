@@ -1,5 +1,49 @@
 # Change Log
 
+## v1.1.0 - 2026-08-31
+
+This release packages the public-release hardening work for the KoiJournal theme and the Suite plugins. It improves repeated reading and publishing workflows, keeps search and monitoring useful during partial outages, and removes raw visitor IP handling from the bundled statistics path.
+
+### Frontend
+
+- Refined the responsive KoiJournal experience across the home, article, About, archive, category, search, RSS, Sitemap, and 404 pages.
+- Added a keyboard-accessible skip link, Escape-to-close mobile navigation with focus return, article table of contents, stable reading layout, cover/thumbnail handling, lazy QR loading, and share controls.
+- Added configurable About content, homepage copy, SEO title/description, technical-stack cards, pinned-post markers, breadcrumbs, JSON-LD, canonical URLs, Open Graph, Twitter metadata, and a default social cover.
+- Added same-origin fallback handling for missing configured avatar, banner, and cover assets. Search results now use `noindex,follow`; low-volume tag archives are filtered consistently across the Sitemap, tag cloud, and archive metadata.
+- Preserved the site's existing Gravatar checkbox state; this release does not change the current backend preference.
+
+### Admin And Plugins
+
+- Added SuiteCore capability routes and the theme-owned `/categories/` page, with configurable navigation visibility and public category Sitemap support.
+- Integrated SuiteAdmin slug health into Typecho's native permalink page and improved parent/child category selection in the post editor.
+- Added native article pinning through Typecho's `contents.order` field.
+- Expanded SuiteMonitor with configurable branding/navigation, configuration diagnostics, log collection and filtering, collector heartbeats, provider-aware probes, and hysteresis-based incident open/close state. Chart gaps, timestamps, single-point data, and refresh redraws are handled reliably.
+- Expanded SuiteSearch fallback coverage to titles, bodies, tags, and categories. Added a file-backed circuit breaker, materialized fallback documents, publish/update/delete synchronization, bounded backfill, queue status, rebuild status, and backend diagnostics.
+
+### Privacy And Security
+
+- New anonymous visitor records use HMAC-SHA256 identifiers with an empty User-Agent; the bundled collector and dashboard no longer store or render raw client IPs.
+- Added the non-Latin Typecho 1.3.0 tag-slug uniqueness patch with bounded collision retries and a reversible, checksum-verified doctor workflow.
+- Added release-package guards for credentials, runtime configuration, unsafe permissions, macOS metadata, and accidental raw-IP collection.
+
+### Operations And Release Tooling
+
+- Added GitHub Actions checks for PHP 7.4/8.3, Composer, Node.js, ShellCheck, and MySQL 8, plus Composer/PHPUnit unit and integration test scaffolding.
+- Added read-only suite and tag-slug diagnostics, monitor installation/check/incident helpers, bounded search-document backfill, reproducible release packaging, and SHA-256 checksums.
+- Made monitor schema upgrades idempotent and MySQL 8.0.46-compatible. Added the `(target, ts)` index and replaced the correlated latest-sample query with an indexed aggregate join to prevent stale monitor queries from driving database load.
+- Updated the English and Chinese README files with installation, migration, privacy, rollback, monitoring, search, and release procedures.
+
+### Verification
+
+- Passed `./tests/static-check.sh`, `git diff --check`, JavaScript syntax checks, and `bash -n` for all deployment scripts.
+- Passed PHP 8.3.33 lint for all PHP files under `themes`, `plugins`, and `deploy`; suite and tag-slug diagnostics report no failures or pending repairs.
+- Verified desktop/mobile and light/dark frontend states, search success/empty/failure paths, monitor heartbeats, search rebuild, a 17-document Meilisearch index, production service health, and a checksum-verified database backup.
+- PHP 7.4, Composer, PHPUnit, ShellCheck, and MySQL 8 smoke checks remain enforced by CI because those toolchains are not installed on the release workstation.
+
+### Known Follow-Up
+
+- Origin responses remain below one second after cache eviction, but Cloudflare can still add multi-second dynamic HTML latency. The tunnel protocol was restored to its original automatic/QUIC configuration; edge caching and routing remain an external follow-up.
+
 ## 2026-08-27
 
 - Corrected visitor filtering for Go's default `Go-http-client/*` User-Agent so DNS/probe requests are excluded from visitor statistics.
@@ -84,4 +128,4 @@
 - Added a dedicated theme setting for the long About-page introduction, reduced chart redraw flicker by updating SVGs only after a new sample, relaxed false gap detection for normal bucket drift, matched monitor avatar corners to the homepage, and standardized package author metadata to `luckyguo`.
 - Exposed the full “一些关于我的事” block as three explicit theme settings: title, subtitle, and detailed introduction.
 - Fixed monitor trend lines appearing broken despite valid hover data: the SVG entrance animation now uses normalized `pathLength=1` values instead of a fixed pixel dash length, which also prevents long charts from repeating visible gaps.
-- Not yet verified: PHP 7.4 runtime behavior, browser screenshots at mobile/desktop sizes, and production deployment.
+- PHP 7.4 runtime behavior remains unverified; mobile/desktop browser screenshots and production deployment are covered by the 2026-08-31 verification below.
