@@ -11,7 +11,7 @@ $this->need('header.php');
     <header class="about-masthead">
         <div class="about-title">
             <p class="eyebrow">ABOUT / SUITE</p>
-            <h1><?php $this->title(); ?></h1>
+            <h1><?php echo suite_stored_html($this->title); ?></h1>
             <p><?php echo htmlspecialchars(suite_option($this->options, 'aboutLead', suite_option($this->options, 'tagline', '介绍这个站点、你的工作或正在探索的方向。')), ENT_QUOTES, 'UTF-8'); ?></p>
         </div>
         <dl class="about-facts" aria-label="个人概览">

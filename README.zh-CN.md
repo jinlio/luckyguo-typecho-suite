@@ -50,26 +50,34 @@
 | `themes/koijournal` | 响应式主题、深色模式、文章目录、代码块和品牌配置 | 无插件依赖 |
 | `plugins/SuiteCore` | 主题能力注册与专属页面路由（当前提供分类总览页） | KoiJournal 分类页 |
 | `plugins/SuiteAdmin` | 可选 Typecho 后台浅色/深色皮肤，共享主题 Cookie | 否 |
+| `plugins/SuiteContent` | 内容专属的文章置顶、标签 slug 预检与只读内容健康面板 | 可选；使用置顶或标签时推荐 |
 | `plugins/Sitemap` | `/sitemap.xml` 站点地图、内容类型与更新频率 | 否 |
 | `plugins/SuiteSearch` | Meilisearch 搜索、参数化 MySQL `LIKE` 降级和重建队列 | 否 |
 | `plugins/SuiteMonitor` | 需管理员登录的只读监控面板（服务器、站点、流量、可选博客统计、可选 24 小时日志） | 否 |
 | `deploy/create-suite-monitor.sql` | 监控数据库结构（原始表 + 小时/天汇总 + 日志事件） | 仅 SuiteMonitor |
 | `deploy/create-monitor-rollups.sql` | 老版本监控库的迁移脚本（补 `swap_total`） | 仅历史库升级 |
-| `deploy/create-suite-search.sql` | 搜索变更队列、搜索状态和重建任务表 | 仅在需要完整重建时 |
+| `deploy/create-suite-search.sql` | 搜索变更队列、物化降级文档、搜索状态和重建任务表 | 仅在需要完整重建或持久化降级时 |
 | `deploy/create-suite-stats.sql` | Typecho 库内的匿名统计表 | 仅启用统计时 |
 | `deploy/monitor-collect.sh` | 每分钟执行的系统、站点和流量采集器 | SuiteMonitor |
 | `deploy/monitor-log-collect.sh` | 每分钟执行的日志采集器（文件 + journald），写入 `log_events` | SuiteMonitor |
+| `deploy/monitor-incident-collect.sh` | 将探测结果汇总为“三次失败开启、两次成功关闭”的 incident 状态 | SuiteMonitor |
 | `deploy/monitor-prune.sh` | 每日运行的原始表与汇总表保留清理任务 | SuiteMonitor |
 | `deploy/monitor.cron` | `/etc/cron.d` 示例（`install-monitor.sh` 会写入等价文件） | 仅作参考 |
 | `deploy/suite-monitor-config.php` | 后台设置导出器，由 cron 任务 `eval` 调用 | SuiteMonitor |
 | `deploy/install-monitor.sh` | 安装 SuiteMonitor 运行文件与 cron 调度 | SuiteMonitor |
 | `deploy/check-install.sh` | 只读的安装与运行诊断 | 强烈推荐 |
+| `deploy/suite-doctor.php` | 只读检查插件、数据表、导航、重复 slug 与钩子归属 | 发布/运维 |
+| `deploy/tag-slug-doctor.php` | 先 dry-run、带可逆映射的标签/分类 slug 冲突迁移 | 仅 doctor 报告冲突时 |
+| `deploy/release-prepare.sh` | 发布前校验、生成可复现制品和 SHA-256（不会部署） | 仅发布 |
+| `composer.json` / `phpunit.xml.dist` | PHP 7.4+ 依赖与单元/集成测试清单 | 开发/CI |
 | `deploy/suite-search-rebuild.php` | 夜间完整重建 Meilisearch 索引的入口 | 仅在需要完整重建时 |
+| `deploy/suite-search-docs-backfill.php` | 分批回填 MySQL 物化降级文档（默认 dry-run） | 首次启用物化降级时 |
 | `deploy/typecho-suite-search-rebuild.service` | 重建入口的 systemd service | 可选 |
 | `deploy/typecho-suite-search-rebuild.timer` | 重建定时器（`OnCalendar=*-*-* 03:30:00`） | 可选 |
 | `deploy/examples/*.env.example` | 旧版 env 模板（后台设置已是新默认） | 仅作参考 |
 | `patches/typecho-1.3.0-personal-avatar.patch` | 在 Typecho 个人设置页加入头像地址和头像上传 | 可选，仅 Typecho 1.3.0 |
 | `patches/typecho-1.3.0-ssrf-hardening.patch` | 增强 `Typecho\Common::safeUrl` 的 SSRF 防护（CVE-2026-7025） | 可选，仅 Typecho 1.3.0 |
+| `patches/typecho-1.3.0-tag-slug-uniqueness.patch` | 为非拉丁标签生成稳定 slug，并在 `(type, slug)` 冲突时重试 | 可选，仅 Typecho 1.3.0 |
 | `tests/static-check.sh` | 校验 PHP、JS、Shell 并强制仓库洁净规则 | 发布前 |
 
 ## 截图展示
@@ -124,7 +132,9 @@
 - MySQL 8.0 及以上。MariaDB 10.5+ 配合 `Mysqli` 适配器也可以。
 - Nginx 或 Apache，对外提供 Typecho 站点。
 - 推荐但非必须：`bash`、`awk`、`sed`、`curl` 与 `mysql` 客户端（监控采集器会用到）。
-- 可选：可被 PHP 进程访问的 Meilisearch 实例（1.x 或 2.x）。如果没有，SuiteSearch 会静默降级到 MySQL `LIKE`。
+- 可选：可被 PHP 进程访问的 Meilisearch 实例（1.x 或 2.x）。如果没有，SuiteSearch 会覆盖标题、正文、标签和分类的 MySQL `LIKE` 降级，并在短时间内熔断重复超时；创建 `suite_search_docs` 表后，发布钩子还会维护一份物化降级文档。
+
+启用 `suite_search_docs` 后，先运行 `TYPECHO_ROOT=/var/www/typecho php deploy/suite-search-docs-backfill.php` 查看已发布文章与文档表数量，再加 `--apply` 分批回填；后台 SuiteSearch 设置页会显示 `物化降级文档: 已回填/已发布`。
 
 在动手之前先把现有数据备份好，确保步骤可以重复执行或回滚：
 
@@ -157,6 +167,7 @@ rsync -a /tmp/typecho-suite/plugins/SuiteAdmin/     "$TYPECHO_ROOT/usr/plugins/S
 rsync -a /tmp/typecho-suite/plugins/Sitemap/        "$TYPECHO_ROOT/usr/plugins/Sitemap/"
 rsync -a /tmp/typecho-suite/plugins/SuiteSearch/    "$TYPECHO_ROOT/usr/plugins/SuiteSearch/"
 rsync -a /tmp/typecho-suite/plugins/SuiteMonitor/  "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/"
+rsync -a /tmp/typecho-suite/plugins/SuiteContent/  "$TYPECHO_ROOT/usr/plugins/SuiteContent/"
 ```
 
 保留 `/tmp/typecho-suite` 目录，后续更新时可以直接重新 `rsync`。`deploy/` 下的脚本刻意不放在 Web 根目录里，而是安装在 `usr/` 之外，避免采集器进程继承 PHP-FPM 的权限。
@@ -628,9 +639,9 @@ SuiteAdmin 不依赖 SuiteMonitor，也不强制启用前端主题，只负责�
 1. **配置检查**：四项通过/失败项，分别覆盖快照文件、监控数据库连接、采集器新鲜度（≤ 180 秒）、历史采样健康度。空面板或数据延迟时首先看这里。
 2. **服务器概览**：CPU、内存、磁盘、负载（按 `CPU 核数` 折算）四张仪表盘。
 3. **服务状态**：每个 `需要监测的 systemd 服务` 一颗状态点。
-4. **站点可用性**：每个 `站点探测目标` 最近 24 小时（每格 15 分钟）的可用性色带，外加 30 天可用率。
+4. **站点可用性**：每个 `站点探测目标` 最近 24 小时（每格 15 分钟）的可用性色带，外加 30 天可用率；`origin-nginx`、`origin-app`、`public-loopback` 这三个目标名会保留为 incident provider 标签。
 5. **资源趋势**：四张趋势图（CPU + 负载、内存 + Swap、网络、流量），按所选时间范围渲染。趋势线在真实采样缺口处自动分段；`最后采集 ... · N 处数据缺口` 反映采集器最新一次运行。
-6. **流量统计**：近 24 小时请求/字节、状态码环形图与 Top 客户端 IP。
+6. **流量统计**：近 24 小时请求/字节与状态码环形图。内置采集器不再记录或展示原始客户端 IP。
 7. **博客访问**（仅启用 `博客访问统计` 时显示）：今日 / 累计 PV 与 UV、Top 5 文章。
 8. **24 小时异常日志**：合并展示 `log_events` 与最近的站点探测失败，提供级别筛选与 60 秒 AJAX 刷新；心跳文件超过 150 秒未更新时显示“采集可能异常”。
 
@@ -645,11 +656,36 @@ SuiteAdmin 不依赖 SuiteMonitor，也不强制启用前端主题，只负责�
 5. 发生问题时恢复备份文件和数据库。数据库恢复会覆盖备份之后新增的内容，必须在维护窗口执行。
 6. 卸载 SuiteMonitor 时，额外删除 cron 文件（`/etc/cron.d/typecho-suite-monitor`）、`/usr/local/sbin/` 下的二进制、`/usr/local/libexec/` 下的导出器，以及（可选）`monitor` 数据库本身。插件 `deactivate` 只会移除后台面板入口。
 
+### 安装诊断与发布制品
+
+在 Web 根目录之外运行 doctor。默认完全只读，发现阻断项时以非零状态退出：
+
+```sh
+TYPECHO_ROOT=/var/www/typecho php deploy/suite-doctor.php
+TYPECHO_ROOT=/var/www/typecho php deploy/suite-doctor.php --json > /tmp/suite-doctor.json
+```
+
+`--apply` 必须同时提供明确的迁移标识；本版本没有注册任何迁移，因此不会因为误操作修改数据。标签冲突使用单独、经过复核且先 dry-run 的命令：
+
+```sh
+TYPECHO_ROOT=/var/www/typecho php deploy/tag-slug-doctor.php --json
+TYPECHO_ROOT=/var/www/typecho php deploy/tag-slug-doctor.php --apply --mapping=/var/backups/typecho-suite/tag-slugs.json
+```
+
+生成发布制品（不会触碰 Typecho 安装）：
+
+```sh
+./deploy/release-prepare.sh --check-only
+./deploy/release-prepare.sh
+```
+
+发布脚本要求 Git 工作区干净，执行严格的静态/工具链校验，并在 `dist/` 写入源码压缩包和 SHA-256 校验文件，同时提示先备份数据库、配置和上传目录并在一次性实例中验收。部署与回滚仍由运维人员显式执行。
+
 ## 数据库、隐私与安全
 
 [](#数据库隐私与安全)
 
-SQL 示例使用 `typecho_` 前缀；如需更换前缀请在所有示例中保持替换一致。统计会保存每日客户端 IP 与 User-Agent 用于访客去重；启用前请补充隐私说明并设置保留策略。采集器只会接触 PHP worker 与 cron 主机可访问的资源；systemd 单元名、站点探测目标、日志路径在交给 systemd 或 `journalctl` 之前会经过校验。凭据应保存在 Git 与站点根目录之外。不要把 Meilisearch 对公网开放。应用 Typecho 1.3.0 SSRF 补丁前，请先针对确切的源码版本核对。
+SQL 示例使用 `typecho_` 前缀；如需更换前缀请在所有示例中保持替换一致。新访客记录会在旧 `vip` 列写入 HMAC-SHA256 标识，并将 User-Agent 留空；请在站点根目录之外设置 `TYPECHO_SUITE_STATS_SECRET`，然后安排清理历史原始记录。内置采集器只保存聚合流量，不记录客户端 IP。凭据应保存在 Git 与站点根目录之外。不要把 Meilisearch 对公网开放。应用 Typecho 1.3.0 补丁前，请先针对确切的源码版本核对。
 
 ## 校验
 
@@ -671,6 +707,8 @@ node --check plugins/SuiteAdmin/admin.js
 ```
 
 `tests/static-check.sh` 会对 `themes`、`plugins`、`deploy` 下所有 PHP 文件执行 `php -l`（若 `php` 可用）、运行上述 JS/Shell 语法检查，并扫描仓库内的个人化痕迹（特定域名、作者相关路径、旧版私有面板键、第三方远程仓库、以及任何非公开的作者标识），以及 PHP 8 才有的 `array_is_list`、`str_contains`、`str_starts_with`、`str_ends_with` 等函数。
+
+CI 会在 PHP 7.4 和 8.3、Node.js、Composer、ShellCheck 以及 MySQL 8 服务矩阵中运行同一套检查。CI 使用 `REQUIRE_TOOLCHAIN=1`，缺少检查工具会直接失败而不是跳过。先执行 `composer install` 安装依赖，再用 `composer test` 运行 PHPUnit 单元/集成测试骨架。
 
 随后应在目标 PHP 环境对每个 PHP 文件执行 `php -l`，并在一次性 Typecho 实例中验证默认表前缀、自定义表前缀、统计关闭、MySQL 搜索降级、Sitemap、监控管理员权限、升级和回滚。SuiteMonitor 还应验证空和多个 `SITE_TARGETS`、日志文件不可读、Swap 为零的主机、只读数据库账号，以及快照陈旧时配置检查的提示。
 

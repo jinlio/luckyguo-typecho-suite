@@ -6,49 +6,59 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
 
 function themeConfig($form)
 {
-    $text = static function (string $name, string $label, string $placeholder = ''): object {
-        return new \Typecho\Widget\Helper\Form\Element\Text($name, null, $placeholder, _t($label));
+    // Typecho's third element argument is the persisted default value, not a
+    // placeholder.  Keep those concepts separate so examples never leak into
+    // a newly saved configuration.
+    $text = static function (string $name, string $label, string $defaultValue = '', string $placeholder = ''): object {
+        $input = new \Typecho\Widget\Helper\Form\Element\Text($name, null, $defaultValue, _t($label));
+        if ($placeholder !== '') {
+            $input->input->setAttribute('placeholder', $placeholder);
+        }
+        return $input;
     };
 
-    $form->addInput($text('siteName', '站点名称', '我的博客'));
-    $form->addInput($text('authorName', '作者名称', '你的名字'));
-    $form->addInput($text('authorHandle', '作者标识', 'username'));
-    $form->addInput($text('tagline', '站点副标题', '记录正在发生的事'));
-    $form->addInput($text('seoHomeTitle', '首页 SEO 标题', '站点名称｜主题关键词'));
+    $form->addInput($text('siteName', '站点名称', '', '我的博客'));
+    $form->addInput($text('authorName', '作者名称', '', '你的名字'));
+    $form->addInput($text('authorHandle', '作者标识', '', 'username'));
+    $form->addInput($text('tagline', '站点副标题', '', '记录正在发生的事'));
+    $form->addInput($text('seoHomeTitle', '首页 SEO 标题', '', '站点名称｜主题关键词'));
     $seoHomeDescription = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'seoHomeDescription', null,
-        '用一句话说明站点主题，例如软件工程、大模型应用、Typecho 与部署运维实践。',
+        '',
         _t('首页 SEO 描述')
     );
+    $seoHomeDescription->input->setAttribute('placeholder', '用一句话说明站点主题，例如软件工程、大模型应用、Typecho 与部署运维实践。');
     $form->addInput($seoHomeDescription);
-    $form->addInput($text('aboutLead', '关于页引导语', '介绍这个站点、你的工作或正在探索的方向。'));
-    $form->addInput($text('aboutFocus', '关于页方向', '按你的实际方向填写'));
-    $form->addInput($text('aboutStack', '关于页技术栈', '按你的实际技术栈填写'));
-    $form->addInput($text('aboutStatus', '关于页状态', '持续学习与构建'));
-    $form->addInput($text('aboutStoryTitle', '关于页模块标题', '一些关于我的事'));
-    $form->addInput($text('aboutStorySubtitle', '关于页模块副标题', '学习、实践，也记录过程。'));
+    $form->addInput($text('aboutLead', '关于页引导语', '', '介绍这个站点、你的工作或正在探索的方向。'));
+    $form->addInput($text('aboutFocus', '关于页方向', '', '按你的实际方向填写'));
+    $form->addInput($text('aboutStack', '关于页技术栈', '', '按你的实际技术栈填写'));
+    $form->addInput($text('aboutStatus', '关于页状态', '', '持续学习与构建'));
+    $form->addInput($text('aboutStoryTitle', '关于页模块标题', '', '一些关于我的事'));
+    $form->addInput($text('aboutStorySubtitle', '关于页模块副标题', '', '学习、实践，也记录过程。'));
     $aboutStackItems = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'aboutStackItems', null,
-        "每行一个技术栈，格式：名称|图标文字或 HTTPS 图标地址|简短说明\nJava|https://raw.githubusercontent.com/devicons/devicon/master/icons/java/java-original.svg|后端开发\nPython|https://cdn.simpleicons.org/python|数据与 AI",
+        '',
         _t('关于页技术栈卡片')
     );
+    $aboutStackItems->input->setAttribute('placeholder', "每行一个技术栈，格式：名称|图标文字或 HTTPS 图标地址|简短说明\nJava|https://raw.githubusercontent.com/devicons/devicon/master/icons/java/java-original.svg|后端开发\nPython|https://cdn.simpleicons.org/python|数据与 AI");
     $form->addInput($aboutStackItems);
-    $form->addInput($text('aboutDoing', '关于页正在做的事', '正在构建可靠的大模型应用与可复用工具。'));
-    $form->addInput($text('aboutWriting', '关于页写作方向', '大模型应用开发、落地实践与真实反馈'));
+    $form->addInput($text('aboutDoing', '关于页正在做的事', '', '正在构建可靠的大模型应用与可复用工具。'));
+    $form->addInput($text('aboutWriting', '关于页写作方向', '', '大模型应用开发、落地实践与真实反馈'));
     $aboutBody = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'aboutBody',
         null,
-        '填写“关于我的事”正文；留空时使用关于页面本身的正文。',
+        '',
         _t('一些关于我的事（详细简介）')
     );
+    $aboutBody->input->setAttribute('placeholder', '填写“关于我的事”正文；留空时使用关于页面本身的正文。');
     $form->addInput($aboutBody);
-    $form->addInput($text('homeEyebrow', '首页眉题', 'JOURNAL / PERSONAL SPACE'));
-    $form->addInput($text('homeSignature', '首页签名', 'LEARN · BUILD · LIVE'));
-    $form->addInput($text('homeSignatureNote', '首页签名说明', '慢慢写，也认真生活。'));
-    $form->addInput($text('postListTitle', '文章列表标题', '最新记录'));
-    $form->addInput($text('postListLabel', '文章列表英文标签', 'RECENT WRITING'));
-    $form->addInput($text('articleAuthorLabel', '文章作者标签', 'WRITTEN BY'));
-    $form->addInput($text('articleTocLabel', '文章目录标签', 'ON THIS PAGE'));
+    $form->addInput($text('homeEyebrow', '首页眉题', '', 'JOURNAL / PERSONAL SPACE'));
+    $form->addInput($text('homeSignature', '首页签名', '', 'LEARN · BUILD · LIVE'));
+    $form->addInput($text('homeSignatureNote', '首页签名说明', '', '慢慢写，也认真生活。'));
+    $form->addInput($text('postListTitle', '文章列表标题', '', '最新记录'));
+    $form->addInput($text('postListLabel', '文章列表英文标签', '', 'RECENT WRITING'));
+    $form->addInput($text('articleAuthorLabel', '文章作者标签', '', 'WRITTEN BY'));
+    $form->addInput($text('articleTocLabel', '文章目录标签', '', 'ON THIS PAGE'));
     $navigationInput = (new \Typecho\Widget\Helper\Form\Element\Checkbox(
         'navigationItems', [
             'home' => _t('首页'),
@@ -56,7 +66,7 @@ function themeConfig($form)
             'archives' => _t('归档'),
             'about' => _t('关于'),
         ],
-        ['home', 'categories', 'archives', 'about'],
+        ['home', 'categories'],
         _t('导航栏显示项目')
     ))->multiMode();
     $navigationStatus = suite_capability_status('categories');
@@ -66,14 +76,16 @@ function themeConfig($form)
     $bio = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'bio',
         null,
-        '介绍你自己、你的项目或这个站点。',
+        '',
         _t('个人简介')
     );
+    $bio->input->setAttribute('placeholder', '介绍你自己、你的项目或这个站点。');
     $form->addInput($bio);
 
     foreach ([
         ['avatarUrl', '头像地址', '留空显示中性主题标识'],
         ['bannerUrl', '首页横幅地址', '留空不显示横幅'],
+        ['bannerMobileUrl', '移动端横幅地址（可选）', '留空沿用首页横幅'],
         ['articleCoverUrl', '文章封面地址', '留空不显示文章封面'],
         ['landingUrl', '个人主页地址', 'https://example.com'],
         ['codeUrl', '代码仓库地址', 'https://github.com/username'],
@@ -81,11 +93,11 @@ function themeConfig($form)
         ['faviconUrl', '网站图标地址', '留空使用主题默认图标'],
         ['gravatarBaseUrl', 'Gravatar 地址', 'https://secure.gravatar.com/avatar/'],
     ] as [$name, $label, $placeholder]) {
-        $input = $text($name, $label, $placeholder);
+        $input = $text($name, $label, '', $placeholder);
         $input->addRule('url', _t('请填写正确的网址'));
         $form->addInput($input);
     }
-    $form->addInput($text('contactEmail', '联系邮箱', 'you@example.com'));
+    $form->addInput($text('contactEmail', '联系邮箱', '', 'you@example.com'));
 
     $accent = new \Typecho\Widget\Helper\Form\Element\Select(
         'accent',
@@ -111,10 +123,10 @@ function themeConfig($form)
     $cookieName = $text('cookieName', '主题偏好 Cookie 名称', 'suite-theme');
     $cookieName->addRule('required', _t('请填写 Cookie 名称'));
     $form->addInput($cookieName);
-    $form->addInput($text('cookieDomain', '主题偏好 Cookie 域名', '留空表示仅当前主机'));
-    $form->addInput($text('siteStart', '站点开始运行时间', '2026-01-01 00:00:00'));
-    $form->addInput($text('bannerAlt', '首页横幅替代文本', '站点首页横幅'));
-    $form->addInput($text('articleCoverAlt', '文章封面替代文本', '文章封面'));
+    $form->addInput($text('cookieDomain', '主题偏好 Cookie 域名', '', '留空表示仅当前主机'));
+    $form->addInput($text('siteStart', '站点开始运行时间', '', '2026-01-01 00:00:00'));
+    $form->addInput($text('bannerAlt', '首页横幅替代文本', '', '站点首页横幅'));
+    $form->addInput($text('articleCoverAlt', '文章封面替代文本', '', '文章封面'));
     $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
         'counterBuckets',
         ['4' => '4', '8' => '8', '16' => '16', '32' => '32', '64' => '64'],
@@ -145,7 +157,7 @@ function themeConfig($form)
         'tags',
         _t('首页第三个模块')
     ));
-    $form->addInput($text('siteKeywords', '首页核心关键词', '个人博客,软件工程,Java,Python,大模型应用'));
+    $form->addInput($text('siteKeywords', '首页核心关键词', '', '个人博客,软件工程,Java,Python,大模型应用'));
     $form->addInput(new \Typecho\Widget\Helper\Form\Element\Select(
         'archiveLimit',
         ['500' => '500', '1000' => '1000', '2000' => '2000', '5000' => '5000'],
@@ -269,6 +281,77 @@ function suite_option($options, string $name, string $fallback): string
     return $value !== '' ? $value : $fallback;
 }
 
+/**
+ * Typecho 1.3 escapes titles before persisting them.  Decode exactly one
+ * entity layer when a title is read, then escape it for the output context.
+ * This prevents both literal `&quot;` in the UI and `&amp;amp;` regressions.
+ */
+function suite_title_text($value): string
+{
+    return html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+function suite_html($value): string
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function suite_stored_html($value): string
+{
+    return suite_html(suite_title_text($value));
+}
+
+function suite_html_attr($value): string
+{
+    return suite_html($value);
+}
+
+function suite_json($value): string
+{
+    $encoded = json_encode(
+        $value,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    );
+    return $encoded === false ? 'null' : $encoded;
+}
+
+/** Resolve an optional page by slug without hard-coding its permalink. */
+function suite_page_url($options, string $slug): string
+{
+    try {
+        $row = suite_db()->fetchRow(suite_db()->select('cid', 'slug', 'type', 'status')
+            ->from('table.contents')->where('type = ?', 'page')->where('slug = ?', $slug)
+            ->where('status = ?', 'publish')->where('created < ?', (int) $options->time)
+            ->order('cid', \Typecho\Db::SORT_ASC)->limit(1));
+        if ($row) {
+            $url = \Typecho\Router::url('page', $row, $options->index);
+            // Router::url() returns '#' when the page route is not registered;
+            // never expose that placeholder as a navigable capability URL.
+            return $url !== '#' ? $url : '';
+        }
+    } catch (\Throwable $e) {
+        // A missing optional page should simply be omitted from navigation.
+    }
+    return '';
+}
+
+function suite_about_url($options): string
+{
+    return suite_page_url($options, 'about');
+}
+
+function suite_archive_title_text($widget): string
+{
+    $value = method_exists($widget, 'getArchiveTitle') ? $widget->getArchiveTitle() : '';
+    // Search keywords are request data, not Typecho's HTML-escaped title
+    // column, so decoding them would turn an encoded query into a different
+    // visible value.
+    return method_exists($widget, 'is') && $widget->is('search')
+        ? (string) $value
+        : suite_title_text($value);
+}
+
 function suite_custom_accent($options): string
 {
     if (!suite_flag($options, 'useCustomAccent', false)) {
@@ -389,12 +472,11 @@ function suite_persist_theme_settings(array $settings): bool
 
 function themeConfigHandle(array &$settings, bool $isInit): bool
 {
+    suite_migrate_form_defaults($settings);
     suite_normalize_navigation_settings($settings, $isInit);
     if ($isInit) {
         // Keep a previously saved theme configuration intact on reactivation.
-        if (!suite_import_default_profile($settings, true)) {
-            return true;
-        }
+        suite_import_default_profile($settings, true);
     }
     return suite_persist_theme_settings($settings);
 }
@@ -413,7 +495,7 @@ function suite_capabilities($options = null): array
 function suite_normalize_navigation_settings(array &$settings, bool $isInit): void
 {
     if ($isInit && !array_key_exists('navigationItems', $settings)) {
-        $settings['navigationItems'] = ['home', 'categories', 'archives', 'about'];
+        $settings['navigationItems'] = ['home', 'categories'];
     }
     if (!array_key_exists('navigationItems', $settings)) {
         return;
@@ -428,11 +510,44 @@ function suite_normalize_navigation_settings(array &$settings, bool $isInit): vo
     $settings['navigation_config_version'] = 2;
 }
 
+/** Clear only exact placeholder values written by pre-1.9 forms. */
+function suite_migrate_form_defaults(array &$settings): bool
+{
+    $sentinels = [
+        '留空显示中性主题标识', '留空不显示横幅', '留空沿用首页横幅', '留空不显示文章封面',
+        '留空使用主题默认图标', 'https://example.com',
+        'https://github.com/username', 'https://example.com/og-image.jpg',
+        'https://secure.gravatar.com/avatar/', 'you@example.com',
+        '留空表示仅当前主机', '介绍你自己、你的项目或这个站点。',
+        '用一句话说明站点主题，例如软件工程、大模型应用、Typecho 与部署运维实践。',
+        '填写“关于我的事”正文；留空时使用关于页面本身的正文。',
+        "每行一个技术栈，格式：名称|图标文字或 HTTPS 图标地址|简短说明\nJava|https://raw.githubusercontent.com/devicons/devicon/master/icons/java/java-original.svg|后端开发\nPython|https://cdn.simpleicons.org/python|数据与 AI",
+    ];
+    $clearable = [
+        'avatarUrl', 'bannerUrl', 'articleCoverUrl', 'landingUrl', 'codeUrl',
+        'bannerMobileUrl', 'ogImageUrl', 'faviconUrl', 'gravatarBaseUrl', 'contactEmail',
+        'cookieDomain', 'bio', 'seoHomeDescription', 'aboutBody', 'aboutStackItems'
+    ];
+    $changed = false;
+    foreach ($settings as $name => $value) {
+        if (is_string($value) && in_array($value, $sentinels, true)
+            && in_array((string) $name, $clearable, true)) {
+            $settings[$name] = '';
+            $changed = true;
+        }
+    }
+    if ((int) ($settings['form_defaults_version'] ?? 0) < 2) {
+        $settings['form_defaults_version'] = 2;
+        $changed = true;
+    }
+    return $changed;
+}
+
 function suite_navigation_ids($options): array
 {
     $value = $options->navigationItems ?? null;
     if ($value === null || $value === '') {
-        return ['home', 'categories', 'archives', 'about'];
+        return ['home', 'categories'];
     }
     if (is_string($value)) {
         $decoded = json_decode($value, true);
@@ -445,7 +560,10 @@ function suite_navigation_ids($options): array
 function suite_capability_url(string $id, $options): string
 {
     $base = rtrim(suite_site_url($options), '/') . '/';
-    $paths = ['home' => '', 'categories' => 'categories/', 'archives' => 'archives.html', 'about' => 'about.html'];
+    if ($id === 'archives' || $id === 'about') {
+        return suite_page_url($options, $id);
+    }
+    $paths = ['home' => '', 'categories' => 'categories/'];
     return $base . ($paths[$id] ?? '');
 }
 
@@ -489,10 +607,14 @@ function suite_navigation_items($options): array
         if ($id === 'categories' && !suite_capability_route_available($id)) {
             continue;
         }
+        $url = suite_capability_url($id, $options);
+        if ($url === '') {
+            continue;
+        }
         $items[] = [
             'id' => $id,
             'label' => (string) $byId[$id]['label'],
-            'url' => suite_capability_url($id, $options),
+            'url' => $url,
         ];
     }
     return $items;
@@ -884,6 +1006,18 @@ function suite_client_ip(): string
     return substr(trim($ip), 0, 64);
 }
 
+/** Keep the visitor identifier unlinkable outside this installation. */
+function suite_visitor_hash($options, string $ip): string
+{
+    $secret = trim((string) getenv('TYPECHO_SUITE_STATS_SECRET'));
+    if ($secret === '') {
+        // A deployment secret is preferred. The site URL fallback prevents
+        // raw IP storage when an operator has not provisioned one yet.
+        $secret = hash('sha256', (string) ($options->siteUrl ?? '') . '|typecho-suite-stats');
+    }
+    return hash_hmac('sha256', $ip, $secret);
+}
+
 function suite_counter_bucket($options = null): int
 {
     $options = $options ?: \Widget\Options::alloc();
@@ -901,7 +1035,6 @@ function suite_record_visit($options = null): void
         }
         $db = suite_db();
         $ip = suite_client_ip();
-        $ua = substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 250);
         $now = date('Y-m-d H:i:s');
         $today = date('Y-m-d');
         $bucket = suite_counter_bucket($options);
@@ -917,8 +1050,9 @@ function suite_record_visit($options = null): void
 
         $visitor = $db->insert('table.suite_visitors')->rows([
             'vday'       => $today,
-            'vip'        => $ip,
-            'ua'         => $ua,
+            'vip'        => suite_visitor_hash($options ?: \Widget\Options::alloc(), $ip),
+            // Keep the legacy column populated without retaining a full UA.
+            'ua'         => '',
             'first_seen' => $now,
             'last_seen'  => $now,
         ]);

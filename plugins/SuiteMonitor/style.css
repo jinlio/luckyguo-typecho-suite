@@ -131,6 +131,12 @@ section > header { display: flex; align-items: baseline; justify-content: space-
 section h2 { margin: 2px 0 0; font-size: 19px; font-weight: 700; }
 section .hint { color: var(--ink-soft); font-size: 12px; }
 .status-warning { color: var(--accent-strong) !important; }
+.incident-list { padding: 0; overflow: hidden; }
+.incident-row { display: grid; grid-template-columns: 1fr 120px 110px minmax(180px, 1fr) 150px; gap: 12px; align-items: center; padding: 12px 14px; border-top: 1px solid var(--line); font-size: 12px; }
+.incident-row:first-child { border-top: 0; }
+.incident-row strong { color: var(--accent-strong); }
+.incident-row span, .incident-row time { color: var(--ink-soft); }
+@media (max-width: 760px) { .incident-row { grid-template-columns: 1fr 1fr; gap: 4px 10px; } .incident-row time { grid-column: 1 / -1; } }
 .check-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .check-item { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
 .check-item strong, .check-item small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

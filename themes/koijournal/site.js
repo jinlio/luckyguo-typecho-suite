@@ -85,10 +85,35 @@
   const searchBar = document.querySelector('.search-bar');
   const navToggle = document.querySelector('.nav-toggle');
   const siteNav = document.querySelector('.site-nav');
-  const setNavOpen = (open) => {
+  let headerElement;
+  const syncHeaderOffsets = () => {
+    headerElement = headerElement || document.querySelector('.site-header');
+    if (!headerElement) return;
+    const height = headerElement.offsetHeight || 70;
+    root.style.setProperty('--header-height', `${height}px`);
+    root.style.setProperty('--toc-top-offset', `${height + 8}px`);
+  };
+  syncHeaderOffsets();
+  if ('ResizeObserver' in window) {
+    const headerResizeObserver = new ResizeObserver(syncHeaderOffsets);
+    if (headerElement) headerResizeObserver.observe(headerElement);
+  }
+  const updateNavState = (open) => {
     siteNav?.classList.toggle('is-open', open);
     navToggle?.setAttribute('aria-expanded', String(open));
     navToggle?.setAttribute('aria-label', open ? '关闭导航菜单' : '打开导航菜单');
+    syncHeaderOffsets();
+  };
+  const updateSearchState = (open) => {
+    searchBar?.classList.toggle('open', open);
+    searchToggle?.setAttribute('aria-expanded', String(open));
+    searchToggle?.setAttribute('aria-label', open ? '关闭搜索' : '打开搜索');
+    syncHeaderOffsets();
+    if (open) searchBar?.querySelector('input')?.focus();
+  };
+  const setNavOpen = (open) => {
+    if (open) updateSearchState(false);
+    updateNavState(open);
   };
   navToggle?.addEventListener('click', () => {
     setNavOpen(!(siteNav?.classList.contains('is-open') ?? false));
@@ -102,10 +127,8 @@
   const shortcut = document.querySelector('[data-search-shortcut]');
   if (shortcut && !/Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)) shortcut.textContent = 'Ctrl K';
   const setSearchOpen = (open) => {
-    searchBar?.classList.toggle('open', open);
-    searchToggle?.setAttribute('aria-expanded', String(open));
-    searchToggle?.setAttribute('aria-label', open ? '关闭搜索' : '打开搜索');
-    if (open) searchBar?.querySelector('input')?.focus();
+    if (open) updateNavState(false);
+    updateSearchState(open);
   };
   searchToggle?.addEventListener('click', () => {
     setSearchOpen(!(searchBar?.classList.contains('open') ?? false));
@@ -125,26 +148,19 @@
     }
   });
 
-  const beginNavigation = (target) => {
-    root.classList.add('page-leaving');
-    setTimeout(() => location.assign(target), 230);
-  };
   addEventListener('pageshow', () => root.classList.remove('page-leaving'));
-  document.addEventListener('click', (event) => {
-    if (reducedMotion() || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    const link = event.target.closest('a[href]');
-    if (!link || link.target || link.hasAttribute('download')) return;
-    const target = new URL(link.href, location.href);
-    if (!['http:', 'https:'].includes(target.protocol)) return;
-    if (target.origin === location.origin && target.pathname === location.pathname && target.search === location.search && target.hash) return;
-    event.preventDefault();
-    beginNavigation(target.href);
-  });
+  const searchInput = searchBar?.querySelector('input[name="s"]');
+  searchInput?.addEventListener('input', () => searchInput.setCustomValidity(''));
   searchBar?.addEventListener('submit', (event) => {
-    if (reducedMotion() || event.defaultPrevented) return;
-    event.preventDefault();
-    root.classList.add('page-leaving');
-    setTimeout(() => HTMLFormElement.prototype.submit.call(searchBar), 230);
+    const input = searchInput;
+    if (input && !input.value.trim()) {
+      event.preventDefault();
+      input.setCustomValidity('请输入搜索关键词');
+      input.reportValidity();
+      input.focus();
+    } else if (input) {
+      input.setCustomValidity('');
+    }
   });
 
   const contextBack = document.querySelector('[data-context-back]');
@@ -157,7 +173,7 @@
     } catch (e) {}
   }
 
-  const header = document.querySelector('.site-header');
+  const header = headerElement || document.querySelector('.site-header');
   const article = document.querySelector('.article[data-reading-progress="on"]');
   let readingProgress;
   if (header && article) {
@@ -178,10 +194,17 @@
     } else {
       const tocList = articleToc.querySelector('ol');
       const tocLinks = new Map();
+      const usedIds = new Set();
       let majorNumber = 0;
       let minorNumber = 0;
       headings.forEach((heading, index) => {
-        const id = heading.id || `section-${index + 1}`;
+        const baseId = heading.id || `section-${index + 1}`;
+        let id = baseId;
+        let suffix = 2;
+        while (usedIds.has(id) || (document.getElementById(id) && document.getElementById(id) !== heading)) {
+          id = `${baseId}-${suffix++}`;
+        }
+        usedIds.add(id);
         heading.id = id;
         const item = document.createElement('li');
         const level = heading.tagName === 'H3' ? 3 : 2;
@@ -207,15 +230,35 @@
         tocLinks.set(id, link);
       });
 
+      const tocToggle = articleToc.querySelector('.article-toc-toggle');
+      const setTocExpanded = (expanded) => {
+        articleToc.classList.toggle('is-collapsed', !expanded);
+        tocToggle?.setAttribute('aria-expanded', String(expanded));
+        tocList?.setAttribute('aria-hidden', String(!expanded));
+        if (tocList && 'inert' in tocList) tocList.inert = !expanded;
+      };
+      tocToggle?.addEventListener('click', () => {
+        setTocExpanded(articleToc.classList.contains('is-collapsed'));
+      });
+      tocList?.addEventListener('click', (event) => {
+        if (event.target.closest('a') && articleToc.classList.contains('is-mobile')) {
+          setTocExpanded(false);
+        }
+      });
+      setTocExpanded(true);
+
       const placeToc = () => {
         const isMobile = innerWidth <= 820;
         if (isMobile && !articleToc.classList.contains('is-mobile')) {
           articleLayout.parentNode.insertBefore(articleToc, articleLayout);
           articleToc.classList.add('is-mobile');
+          setTocExpanded(false);
         } else if (!isMobile && articleToc.classList.contains('is-mobile')) {
           articleAside.appendChild(articleToc);
           articleToc.classList.remove('is-mobile');
+          setTocExpanded(true);
         }
+        syncHeaderOffsets();
       };
       placeToc();
       addEventListener('resize', placeToc, { passive: true });
@@ -226,6 +269,8 @@
         if (!link || link === activeTocLink) return;
         activeTocLink?.classList.remove('is-active');
         link.classList.add('is-active');
+        link.setAttribute('aria-current', 'location');
+        activeTocLink?.removeAttribute('aria-current');
         activeTocLink = link;
         if (!articleToc.classList.contains('is-mobile')) {
           const tocRect = articleToc.getBoundingClientRect();
@@ -257,6 +302,7 @@
   const refreshScrollMetrics = () => {
     if (!article) return;
     headerHeight = header?.offsetHeight ?? 0;
+    root.style.setProperty('--header-height', `${headerHeight}px`);
     articleStart = article.getBoundingClientRect().top + scrollY - headerHeight;
     articleHeight = article.offsetHeight;
   };

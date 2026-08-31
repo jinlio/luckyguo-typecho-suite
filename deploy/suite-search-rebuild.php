@@ -25,7 +25,7 @@ if (is_file($root . '/var/Typecho/Widget.php')) {
 if (is_file($root . '/var/Widget/Options.php')) {
     require_once $root . '/var/Widget/Options.php';
 }
-foreach (['RuntimeConfig', 'MeiliClient', 'Indexer', 'RebuildStore', 'RebuildService'] as $file) {
+foreach (['RuntimeConfig', 'MeiliClient', 'Indexer', 'CircuitBreaker', 'RebuildStore', 'RebuildService'] as $file) {
     require_once $pluginDirectory . '/' . $file . '.php';
 }
 

@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Static checks (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.3']
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli, pdo_mysql, mbstring, xml, dom, xmlwriter
+          tools: composer:v2
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install --yes shellcheck
+
+      - name: Validate toolchain (missing tools fail the job)
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v php
+          command -v composer
+          command -v node
+          command -v shellcheck
+          php -v
+          composer --version
+          node --version
+          shellcheck --version
+
+      - name: Install PHP test dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run repository checks
+        env:
+          REQUIRE_TOOLCHAIN: '1'
+          CI: 'true'
+        run: ./tests/static-check.sh
+
+      - name: Run PHPUnit skeleton
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist --testdox
+
+  integration:
+    name: Typecho smoke test (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.3']
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: typecho_test
+          MYSQL_USER: typecho
+          MYSQL_PASSWORD: typecho
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli, pdo_mysql, mbstring, xml, dom, xmlwriter
+          tools: composer:v2
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install --yes shellcheck mysql-client
+
+      - name: Validate required tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          for tool in php composer node shellcheck mysql; do command -v "$tool"; done
+
+      - name: Install PHP test dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run MySQL 8 integration smoke test
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: '3306'
+          DB_DATABASE: typecho_test
+          DB_USERNAME: typecho
+          DB_PASSWORD: typecho
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist --testsuite 'Typecho Suite integration tests'

@@ -50,26 +50,34 @@ This repository contains no personal domain, author identity, production databas
 | `themes/koijournal` | Responsive theme, dark mode, article TOC, code blocks, branding settings | No plugin |
 | `plugins/SuiteCore` | Theme capability registry and theme-owned routes (currently the category overview) | KoiJournal category page |
 | `plugins/SuiteAdmin` | Optional administrator light/dark skin, shares the theme cookie | No |
+| `plugins/SuiteContent` | Content-owned sticky posts, tag slug preflight, and the read-only content health panel | Optional; recommended when using sticky posts or tags |
 | `plugins/Sitemap` | Public `/sitemap.xml` route, content types and update frequency | No |
 | `plugins/SuiteSearch` | Meilisearch search with parameterised MySQL `LIKE` fallback and a rebuild queue | No |
 | `plugins/SuiteMonitor` | Authenticated read-only monitoring panel (server, sites, traffic, optional blog stats, optional 24h log) | No |
 | `deploy/create-suite-monitor.sql` | Monitor database schema (raw + hourly + daily rollups + log events) | Only with SuiteMonitor |
 | `deploy/create-monitor-rollups.sql` | One-time migration for legacy monitor databases (adds `swap_total`) | Legacy only |
-| `deploy/create-suite-search.sql` | Search change queue, search meta, and rebuild task tables | Only for full rebuilds |
+| `deploy/create-suite-search.sql` | Search change queue, materialized fallback documents, search meta, and rebuild task tables | Only for full rebuilds or durable fallback |
 | `deploy/create-suite-stats.sql` | Anonymous statistics tables in the Typecho database | Only with anonymous stats |
 | `deploy/monitor-collect.sh` | Per-minute collector for system metrics, sites, and traffic | With SuiteMonitor |
 | `deploy/monitor-log-collect.sh` | Per-minute log collector (files + journald) writing `log_events` | With SuiteMonitor |
+| `deploy/monitor-incident-collect.sh` | Reconciles probe results into three-failure-open/two-success-close incident state | With SuiteMonitor |
 | `deploy/monitor-prune.sh` | Daily retention job for raw and rollup tables | With SuiteMonitor |
 | `deploy/monitor.cron` | Sample `/etc/cron.d` entries (the installer writes an equivalent file) | Reference only |
 | `deploy/suite-monitor-config.php` | Backend-settings exporter, run by the cron jobs | With SuiteMonitor |
 | `deploy/install-monitor.sh` | Installs the SuiteMonitor runtime and cron schedule | With SuiteMonitor |
 | `deploy/check-install.sh` | Read-only installation and runtime diagnosis | Always recommended |
+| `deploy/suite-doctor.php` | Read-only health check for plugins, tables, navigation, duplicate slugs, and hook ownership | Release/operations |
+| `deploy/tag-slug-doctor.php` | Dry-run-first tag/category slug collision migration with reversible mapping | Only when doctor reports collisions |
+| `deploy/release-prepare.sh` | Reproducible release checks, artifact and SHA-256 checksum generation (never deploys) | Release only |
+| `composer.json` / `phpunit.xml.dist` | PHP 7.4+ dependency and unit/integration test manifest | Development/CI |
 | `deploy/suite-search-rebuild.php` | Nightly full Meilisearch rebuild entry point | Only for full rebuilds |
+| `deploy/suite-search-docs-backfill.php` | Bounded backfill for materialized MySQL fallback documents (dry-run by default) | First enablement of materialized fallback |
 | `deploy/typecho-suite-search-rebuild.service` | systemd service for the rebuild entry point | Optional |
 | `deploy/typecho-suite-search-rebuild.timer` | systemd timer (`OnCalendar=*-*-* 03:30:00`) | Optional |
 | `deploy/examples/*.env.example` | Legacy env-file templates (backend settings are the new default) | Reference only |
 | `patches/typecho-1.3.0-personal-avatar.patch` | Adds avatar URL + upload fields to the Typecho profile page | Optional, Typecho 1.3.0 only |
 | `patches/typecho-1.3.0-ssrf-hardening.patch` | Extra SSRF protection in `Typecho\Common::safeUrl` (CVE-2026-7025) | Optional, Typecho 1.3.0 only |
+| `patches/typecho-1.3.0-tag-slug-uniqueness.patch` | Stable non-Latin tag slugs with `(type, slug)` collision retries | Optional, Typecho 1.3.0 only |
 | `tests/static-check.sh` | Lints PHP, JS, shell scripts and enforces repository hygiene | Release only |
 
 ## Screenshots
@@ -124,7 +132,9 @@ On the host that runs Typecho, install:
 - MySQL 8.0 or newer. MariaDB 10.5+ with the `Mysqli` adapter also works.
 - Nginx or Apache serving the Typecho web root.
 - Optional but recommended: `jq` is not required; `bash`, `awk`, `sed`, `curl`, and `mysql` client are required for the monitor collector scripts.
-- Optional: a running Meilisearch instance (1.x or 2.x) reachable from the PHP worker. Without it, SuiteSearch silently falls back to MySQL `LIKE`.
+- Optional: a running Meilisearch instance (1.x or 2.x) reachable from the PHP worker. Without it, SuiteSearch falls back to MySQL `LIKE` across title, body, tags, and categories; a short circuit breaker avoids repeating remote timeouts.
+
+After installing `suite_search_docs`, run `TYPECHO_ROOT=/var/www/typecho php deploy/suite-search-docs-backfill.php` to inspect published/document counts, then add `--apply` to backfill in bounded batches. The SuiteSearch settings page reports `materialized documents: backfilled/published`.
 
 Before touching anything, back up the Typecho data so the steps below can be repeated or rolled back:
 
@@ -157,6 +167,7 @@ rsync -a /tmp/typecho-suite/plugins/SuiteAdmin/     "$TYPECHO_ROOT/usr/plugins/S
 rsync -a /tmp/typecho-suite/plugins/Sitemap/        "$TYPECHO_ROOT/usr/plugins/Sitemap/"
 rsync -a /tmp/typecho-suite/plugins/SuiteSearch/    "$TYPECHO_ROOT/usr/plugins/SuiteSearch/"
 rsync -a /tmp/typecho-suite/plugins/SuiteMonitor/  "$TYPECHO_ROOT/usr/plugins/SuiteMonitor/"
+rsync -a /tmp/typecho-suite/plugins/SuiteContent/  "$TYPECHO_ROOT/usr/plugins/SuiteContent/"
 ```
 
 Keep `/tmp/typecho-suite` around so you can rerun `rsync` after pulling updates. The deploy scripts are intentionally not copied under the web root; they live outside `usr/` so the collector user can write files without inheriting PHP-FPM permissions.
@@ -629,9 +640,9 @@ The panel renders (top to bottom):
 1. **Configuration check** — four pass/fail rows for the snapshot file, monitor database connection, collector freshness (≤ 180 s), and historical sampling health. Use it to triage an empty or stale panel.
 2. **Server overview** — gauge cards for CPU, memory, disk, load (scaled to `CPU 核数`).
 3. **Services** — one dot per `需要监测的 systemd 服务`.
-4. **Uptime** — last-24-hour strip plus 30-day availability per configured `站点探测目标`.
+4. **Uptime** — last-24-hour strip plus 30-day availability per configured `站点探测目标`; target keys `origin-nginx`, `origin-app`, and `public-loopback` are preserved as provider labels for incident triage.
 5. **Trends** — four charts (CPU + load, memory + swap, network, traffic) for the selected range. Trend lines split on real sampling gaps; data-quality text (`最后采集 ... · N 处数据缺口`) reflects the latest collector run.
-6. **Traffic** — last-24-hour totals, status-code donut, and top client IPs.
+6. **Traffic** — last-24-hour totals and a status-code donut. Raw client IPs are not shown or collected by the bundled collector.
 7. **Blog** (only when `博客访问统计` is on) — today / total PV/UV and the top five posts.
 8. **24h exception log** — combined view of `log_events` and recent site probe failures, with level filters and a 60-second AJAX refresh. A `采集可能异常` badge appears when the heartbeat file is older than 150 seconds.
 
@@ -646,11 +657,36 @@ The panel renders (top to bottom):
 5. To roll back, restore the backup files and database. A database restore overwrites everything created after the backup, so it must run inside a maintenance window.
 6. When removing SuiteMonitor, also remove the cron file (`/etc/cron.d/typecho-suite-monitor`), the binaries under `/usr/local/sbin/`, the exporter under `/usr/local/libexec/`, and optionally the `monitor` database. The plugin `deactivate` action removes only the admin panel entry.
 
+### Installation doctor and release artifacts
+
+Run the doctor from outside the web root. It is read-only by default and exits non-zero when a blocking check fails:
+
+```sh
+TYPECHO_ROOT=/var/www/typecho php deploy/suite-doctor.php
+TYPECHO_ROOT=/var/www/typecho php deploy/suite-doctor.php --json > /tmp/suite-doctor.json
+```
+
+`--apply` is intentionally rejected unless an explicit migration identifier is supplied, and this release has no migrations registered. Tag collisions use the separate, reviewed dry-run command:
+
+```sh
+TYPECHO_ROOT=/var/www/typecho php deploy/tag-slug-doctor.php --json
+TYPECHO_ROOT=/var/www/typecho php deploy/tag-slug-doctor.php --apply --mapping=/var/backups/typecho-suite/tag-slugs.json
+```
+
+Prepare an artifact without touching a Typecho installation:
+
+```sh
+./deploy/release-prepare.sh --check-only
+./deploy/release-prepare.sh
+```
+
+The release script requires a clean Git worktree, runs the strict static/toolchain checks, writes a tarball and SHA-256 checksum under `dist/`, and prints the required database/config/uploads backup and staging reminder. Deployment and rollback remain operator-controlled.
+
 ## Database, privacy, and security
 
 [](#database-privacy-and-security)
 
-SQL examples use the `typecho_` prefix; replace it consistently for another prefix. Statistics store client IP and User-Agent for daily deduplication, so review the privacy notice and retention before enabling them. The collector itself only sees what is reachable from the PHP worker and from the host that runs cron; service unit names, site probe targets, and log source paths are validated before they reach systemd or `journalctl`. Keep credentials outside Git and the web root. Do not expose Meilisearch. Review the Typecho 1.3.0 SSRF patch against the exact source revision before applying it.
+SQL examples use the `typecho_` prefix; replace it consistently for another prefix. New visitor rows store an HMAC-SHA256 identifier in the legacy `vip` column and an empty User-Agent; set `TYPECHO_SUITE_STATS_SECRET` outside the web root for unlinkability, then schedule removal of legacy raw rows. The collector stores aggregate traffic only and no longer records client IPs. Keep credentials outside Git and the web root. Do not expose Meilisearch. Review the Typecho 1.3.0 patches against the exact source revision before applying them.
 
 ## Release checks
 
@@ -672,6 +708,8 @@ node --check plugins/SuiteAdmin/admin.js
 ```
 
 `tests/static-check.sh` lints every PHP file under `themes`, `plugins`, and `deploy` (when `php` is available), runs the JavaScript and shell checks above, scans for personal-deployment coupling (specific domains, author paths, legacy private panel keys, third-party remote remotes, and any non-public author handle), and rejects PHP 8-only helpers such as `array_is_list`, `str_contains`, `str_starts_with`, or `str_ends_with`.
+
+CI runs the same checks with PHP 7.4 and 8.3, Node.js, Composer, ShellCheck, and a MySQL 8 service. In CI (`REQUIRE_TOOLCHAIN=1`) a missing checker is a failure rather than a skipped warning. Install Composer dependencies with `composer install`, then run `composer test` for the PHPUnit unit/integration skeleton.
 
 Then run `php -l` on every PHP file with the target PHP version, and install into a disposable Typecho instance. Test anonymous pages, RSS, comments, uploads, admin pages, Sitemap, search fallback, optional statistics, monitor access, default and custom prefixes, upgrade, and rollback. For SuiteMonitor, verify an empty `SITE_TARGETS`, multiple targets, unavailable log files, a zero-Swap host, the read-only database account, and the configuration-check panel on a stale snapshot.
 

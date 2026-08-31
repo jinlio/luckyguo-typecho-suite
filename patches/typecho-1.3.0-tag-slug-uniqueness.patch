@@ -1,0 +1,59 @@
+diff --git a/var/Widget/Base/Metas.php b/var/Widget/Base/Metas.php
+index 9a7e8c0..suite130 100644
+--- a/var/Widget/Base/Metas.php
++++ b/var/Widget/Base/Metas.php
+@@ -133,14 +133,44 @@ class Metas extends Base implements QueryInterface, RowFilterInterface, PrimaryK
+             } else {
+                 $slug = Common::slugName($tag);
++                $slug = trim((string) $slug, '-_');
++                // Common::slugName() is empty for many non-Latin names. Keep
++                // those tags addressable while making the fallback stable.
++                if ($slug === '') {
++                    $slug = 'tag-' . substr(sha1((string) $tag), 0, 12);
++                }
++                $slug = substr($slug, 0, 120);
++                $baseSlug = $slug;
++                for ($attempt = 1; $attempt <= 20; $attempt++) {
++                    $candidate = $attempt === 1
++                        ? $baseSlug
++                        : substr($baseSlug, 0, max(1, 120 - strlen((string) $attempt) - 1))
++                            . '-' . $attempt;
++                    $owner = $this->db->fetchRow($this->select()
++                        ->where('type = ?', 'tag')
++                        ->where('slug = ?', $candidate)->limit(1));
++                    if ($owner) {
++                        continue;
++                    }
++                    try {
++                        $result[] = $this->insert([
++                            'name'  => $tag,
++                            'slug'  => $candidate,
++                            'type'  => 'tag',
++                            'count' => 0,
++                            'order' => 0,
++                        ]);
++                        break;
++                    } catch (Exception $exception) {
++                        // A concurrent writer may win between the check and
++                        // insert when the (type, slug) unique key is enabled.
++                        $existing = $this->db->fetchRow($this->select()
++                            ->where('type = ?', 'tag')
++                            ->where('name = ?', $tag)->limit(1));
++                        if ($existing) {
++                            $result[] = $existing['mid'];
++                            break;
++                        }
++                    }
++                }
+-
+-                if ($slug) {
+-                    $result[] = $this->insert([
+-                        'name'  => $tag,
+-                        'slug'  => $slug,
+-                        'type'  => 'tag',
+-                        'count' => 0,
+-                        'order' => 0,
+-                    ]);
+-                }
+             }
+         }

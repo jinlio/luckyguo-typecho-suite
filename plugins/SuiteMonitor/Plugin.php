@@ -155,9 +155,11 @@ class Plugin implements PluginInterface
         $form->addInput(new Form\Element\Text(
             'cookieName', null, 'suite-theme', _t('主题偏好 Cookie 名称')
         ));
-        $form->addInput(new Form\Element\Text(
-            'cookieDomain', null, '留空表示仅当前主机', _t('主题偏好 Cookie 域名')
-        ));
+        $cookieDomain = new Form\Element\Text(
+            'cookieDomain', null, '', _t('主题偏好 Cookie 域名')
+        );
+        $cookieDomain->input->setAttribute('placeholder', '留空表示仅当前主机');
+        $form->addInput($cookieDomain);
         $form->addInput((new Form\Element\Checkbox(
             'enableStats',
             ['1' => _t('显示 Typecho 匿名访问统计（需要 suite_* 数据表）')],
