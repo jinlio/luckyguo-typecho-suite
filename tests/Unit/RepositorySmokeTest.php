@@ -21,6 +21,12 @@ final class RepositorySmokeTest extends TestCase
         );
         foreach ($iterator as $file) {
             if ($file->isFile() && in_array($file->getExtension(), ['php', 'sh', 'md'], true)) {
+                // The static checker intentionally contains the forbidden
+                // values it scans for, so it cannot be tested as a package
+                // payload by this broad repository sweep.
+                if ($file->getPathname() === $root . '/tests/static-check.sh') {
+                    continue;
+                }
                 $files[] = $file->getPathname();
             }
         }
@@ -35,7 +41,7 @@ final class RepositorySmokeTest extends TestCase
         $doctor = (string) file_get_contents(dirname(__DIR__, 2) . '/deploy/suite-doctor.php');
         $this->assertStringContainsString("\$apply = false", $doctor);
         $this->assertStringContainsString("--apply", $doctor);
-        $this->assertStringContainsString('DRY-RUN', $doctor);
+        $this->assertStringContainsString('read-only mode', strtolower($doctor));
     }
 
     public function testTagSlugMigrationHasRollbackGuardsAndCorePatch(): void

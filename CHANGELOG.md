@@ -1,5 +1,17 @@
 # Change Log
 
+## v1.1.1 - 2026-08-31
+
+This patch release corrects the release-test harness without changing the runtime behavior of the theme or plugins.
+
+- Removed the PHPUnit 10-only `cacheDirectory` configuration attribute so the declared PHPUnit 9.6 dependency validates cleanly on PHP 7.4 and PHP 8.3.
+- Excluded the self-scanning `tests/static-check.sh` script from the broad credential/path smoke sweep; the script still runs its own explicit repository hygiene checks.
+- Updated the doctor read-only assertion to match the command's user-facing `Read-only mode` output.
+
+### Verification
+
+- The local static checks and `git diff --check` pass; the full PHP 7.4/8.3 PHPUnit, Composer, ShellCheck, and MySQL matrix is rerun by GitHub Actions for this patch release.
+
 ## v1.1.0 - 2026-08-31
 
 This release packages the public-release hardening work for the KoiJournal theme and the Suite plugins. It improves repeated reading and publishing workflows, keeps search and monitoring useful during partial outages, and removes raw visitor IP handling from the bundled statistics path.
