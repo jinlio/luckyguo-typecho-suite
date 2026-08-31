@@ -16,18 +16,20 @@ final class RepositorySmokeTest extends TestCase
         $this->assertFileDoesNotExist($root . '/config.inc.php');
 
         $files = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
-        );
-        foreach ($iterator as $file) {
-            if ($file->isFile() && in_array($file->getExtension(), ['php', 'sh', 'md'], true)) {
-                // The static checker intentionally contains the forbidden
-                // values it scans for, so it cannot be tested as a package
-                // payload by this broad repository sweep.
-                if ($file->getPathname() === $root . '/tests/static-check.sh') {
-                    continue;
+        $scanRoots = ['themes', 'plugins', 'deploy', 'README.md', 'README.zh-CN.md'];
+        foreach ($scanRoots as $relative) {
+            $path = $root . '/' . $relative;
+            if (is_file($path)) {
+                $files[] = $path;
+                continue;
+            }
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)
+            );
+            foreach ($iterator as $file) {
+                if ($file->isFile() && in_array($file->getExtension(), ['php', 'sh', 'md'], true)) {
+                    $files[] = $file->getPathname();
                 }
-                $files[] = $file->getPathname();
             }
         }
         foreach ($files as $file) {

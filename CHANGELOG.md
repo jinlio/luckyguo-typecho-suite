@@ -1,5 +1,13 @@
 # Change Log
 
+## v1.1.2 - 2026-08-31
+
+This patch release narrows the repository credential smoke test to the public package payload. Test fixtures may contain the literal patterns that the checker is designed to detect, so they are no longer mistaken for leaked deployment data.
+
+### Verification
+
+- The updated smoke test covers `themes`, `plugins`, `deploy`, `README.md`, and `README.zh-CN.md`; the full PHP 7.4/8.3 PHPUnit and integration matrix is rerun by GitHub Actions for this release.
+
 ## v1.1.1 - 2026-08-31
 
 This patch release corrects the release-test harness without changing the runtime behavior of the theme or plugins.
